@@ -20,7 +20,7 @@ else
     echo "No keyboard ID provided, skipping configuration update"
 fi
 
-git clone git@github.com:MontyTheSoftwareEngineer/wl-kbptr.git ~/wl-kbptr
+git clone https://github.com/DereckAn/wl-kbptr.git ~/wl-kbptr
 cd ~/wl-kbptr
 git checkout fix/opencv5
 meson setup build --buildtype=release -Dopencv=enabled

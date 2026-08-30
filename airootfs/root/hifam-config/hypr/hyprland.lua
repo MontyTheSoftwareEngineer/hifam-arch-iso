@@ -50,6 +50,9 @@ local menu        = "hyprlauncher"
 -- Or execute your favorite apps at launch like this:
 --
 hl.on("hyprland.start", function () 
+   -- Auto-run HiFam setup scripts on first boot
+   hl.exec_cmd("kitty -e sudo /usr/share/hifam/hifam-arch-scripts/run.sh")
+   -- Open a regular terminal after setup starts
    hl.exec_cmd(terminal)
   -- hl.exec_cmd("waybar")
   -- hl.exec_cmd("waybar & hyprpaper & firefox")

@@ -113,6 +113,13 @@ echo "Copying HiFam configuration to /usr/share/hifam..."
 mkdir -p "$MOUNT_POINT/usr/share/hifam"
 cp -rv "$CONFIG_DIR"/* "$MOUNT_POINT/usr/share/hifam/" || echo "Some files failed to copy"
 
+# Make all scripts in hifam-arch-scripts executable
+echo "Making scripts executable..."
+if [ -d "$MOUNT_POINT/usr/share/hifam/hifam-arch-scripts" ]; then
+    chmod +x "$MOUNT_POINT/usr/share/hifam/hifam-arch-scripts"/*.sh
+    echo "✓ Scripts in hifam-arch-scripts are now executable"
+fi
+
 # Copy Plymouth theme files if they exist
 if [ -d "/usr/share/plymouth/themes/hifam" ]; then
     echo "Copying Plymouth theme..."
