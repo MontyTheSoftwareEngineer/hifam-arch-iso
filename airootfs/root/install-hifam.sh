@@ -129,6 +129,71 @@ if [ -d "/usr/share/plymouth/themes/hifam" ]; then
     echo "✓ Plymouth theme activated!"
 fi
 
+# Setup user dotfiles automatically
+echo ""
+echo "Setting up user dotfiles..."
+
+# Find the user (first non-root user with UID >= 1000)
+USER_INFO=$(arch-chroot "$MOUNT_POINT" getent passwd {1000..60000} 2>/dev/null | head -n1)
+
+if [ -n "$USER_INFO" ]; then
+    USERNAME=$(echo "$USER_INFO" | cut -d: -f1)
+    USER_HOME=$(echo "$USER_INFO" | cut -d: -f6)
+    
+    echo "Found user: $USERNAME ($USER_HOME)"
+    
+    # Create .config directory (but NOT the subdirectories we'll symlink)
+    echo "Creating .config directory..."
+    arch-chroot "$MOUNT_POINT" mkdir -p "$USER_HOME/.config/tmux"
+    
+    # Create symlinks for main configs (these become the directories themselves)
+    echo "Creating symlinks..."
+    arch-chroot "$MOUNT_POINT" ln -sf /usr/share/hifam/hypr "$USER_HOME/.config/hypr"
+    arch-chroot "$MOUNT_POINT" ln -sf /usr/share/hifam/nvim "$USER_HOME/.config/nvim"
+    arch-chroot "$MOUNT_POINT" ln -sf /usr/share/hifam/kitty "$USER_HOME/.config/kitty"
+    [ -d "$MOUNT_POINT/usr/share/hifam/mouseless" ] && arch-chroot "$MOUNT_POINT" ln -sf /usr/share/hifam/mouseless "$USER_HOME/.config/mouseless"
+    
+    # Copy tmux config (we created the tmux directory above)
+    echo "Copying tmux config..."
+    arch-chroot "$MOUNT_POINT" cp /usr/share/hifam/tmux.conf "$USER_HOME/.config/tmux/tmux.conf" 2>/dev/null || true
+    
+    # Copy shell configs
+    echo "Copying shell configs..."
+    arch-chroot "$MOUNT_POINT" cp /usr/share/hifam/zshrc "$USER_HOME/.zshrc" 2>/dev/null || true
+    arch-chroot "$MOUNT_POINT" cp /usr/share/hifam/p10k.zsh "$USER_HOME/.p10k.zsh" 2>/dev/null || true
+    
+    # Fix ownership
+    echo "Fixing file ownership..."
+    arch-chroot "$MOUNT_POINT" chown -R "$USERNAME:$USERNAME" "$USER_HOME"
+    
+    echo "✓ Dotfiles configured for $USERNAME!"
+else
+    echo "⚠ No user found (UID >= 1000)"
+    echo "  Dotfiles copied to /usr/share/hifam for manual setup"
+fi
+
+# Setup keyd
+echo ""
+echo "Setting up keyd..."
+if [ -f "$MOUNT_POINT/usr/share/hifam/keyd/default.conf" ]; then
+    mkdir -p "$MOUNT_POINT/etc/keyd"
+    cp "$MOUNT_POINT/usr/share/hifam/keyd/default.conf" "$MOUNT_POINT/etc/keyd/"
+    arch-chroot "$MOUNT_POINT" systemctl enable keyd 2>/dev/null && echo "✓ keyd enabled" || echo "  (keyd will be enabled on first boot)"
+fi
+
+# Configure GRUB to say "HiFam Arch"
+echo ""
+echo "Configuring GRUB bootloader..."
+if [ -f "$MOUNT_POINT/etc/default/grub" ]; then
+    # Update GRUB_DISTRIBUTOR to HiFam Arch
+    sed -i 's/GRUB_DISTRIBUTOR=.*/GRUB_DISTRIBUTOR="HiFam Arch"/' "$MOUNT_POINT/etc/default/grub"
+    
+    # Regenerate GRUB config
+    echo "Regenerating GRUB configuration..."
+    arch-chroot "$MOUNT_POINT" grub-mkconfig -o /boot/grub/grub.cfg 2>&1 | grep -E "Found|Generating" || echo "  (GRUB config regenerated)"
+    echo "✓ GRUB configured to show 'HiFam Arch'"
+fi
+
 # Create a simple README for the user
 cat > "$MOUNT_POINT/usr/share/hifam/README.txt" << 'EOFREADME'
 ╔══════════════════════════════════════════════════════════════════╗
