@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=HiFam
+Description=HiFam Arch Linux Boot Theme
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/hifam
+ScriptFile=/usr/share/plymouth/themes/hifam/hifam.script

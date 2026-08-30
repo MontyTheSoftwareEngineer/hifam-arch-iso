@@ -1,0 +1,18 @@
+
+╔════════════════════════════════════════════════════════════╗
+║                                                            ║
+║           Welcome to HiFam Arch Linux ISO!                 ║
+║                                                            ║
+╚════════════════════════════════════════════════════════════╝
+
+This ISO includes your custom configurations and dotfiles.
+
+Quick start:
+  1. Connect to Wi-Fi (if needed): iwctl
+  2. Run the automated installer: ./install-hifam.sh
+
+  Or use archinstall manually:
+    archinstall --config /root/hifam-config/user_configuration.json
+
+Documentation: /root/README.md  |  Configs: /root/hifam-config/
+

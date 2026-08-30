@@ -1,0 +1,54 @@
+# HiFam Plymouth Boot Splash Script
+
+# Screen and logo setup
+screen_width = Window.GetWidth();
+screen_height = Window.GetHeight();
+
+logo.image = Image("logo.png");
+logo.sprite = Sprite(logo.image);
+logo.width = logo.image.GetWidth();
+logo.height = logo.image.GetHeight();
+
+# Center the logo
+logo.x = screen_width / 2 - logo.width / 2;
+logo.y = screen_height / 2 - logo.height / 2;
+logo.sprite.SetPosition(logo.x, logo.y, 100);
+
+# Status text below logo
+status_sprite = Sprite();
+status_sprite.SetPosition(screen_width / 2, screen_height / 2 + logo.height / 2 + 50, 2);
+
+# Simple animation - fade in/out
+global.counter = 0;
+
+fun refresh_callback() {
+    global.counter++;
+    # Subtle pulse effect
+    alpha = 0.8 + 0.2 * Math.Sin(global.counter / 20);
+    logo.sprite.SetOpacity(alpha);
+}
+
+Plymouth.SetRefreshFunction(refresh_callback);
+
+# Message callback for status updates
+fun message_callback(text) {
+    status_image = Image.Text(text, 1, 1, 1);
+    status_sprite.SetImage(status_image);
+}
+
+Plymouth.SetMessageFunction(message_callback);
+
+# Display callback
+fun display_normal_callback() {
+    logo.sprite.SetOpacity(1);
+    status_sprite.SetOpacity(1);
+}
+
+Plymouth.SetDisplayNormalFunction(display_normal_callback);
+
+# Quit callback
+fun quit_callback() {
+    logo.sprite.SetOpacity(0);
+}
+
+Plymouth.SetQuitFunction(quit_callback);

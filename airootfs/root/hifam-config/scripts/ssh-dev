@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -e
+
+CONFIG_FILE="$HOME/.kona_config"
+PASSWORD='3055DeerLoonPanda'
+
+get_target_ip() {
+    if [ -n "$1" ]; then
+        echo "$1"
+    elif [ -f "$CONFIG_FILE" ]; then
+        grep "^ip=" "$CONFIG_FILE" | cut -d'=' -f2
+    else
+        echo "No IP provided and config file not found." >&2
+        exit 1
+    fi
+}
+
+TARGET_IP=$(get_target_ip "$1")
+
+sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@$TARGET_IP
+
