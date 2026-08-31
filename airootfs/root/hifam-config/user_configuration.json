@@ -61,6 +61,7 @@
         "base-devel",
         "linux",
         "linux-firmware",
+        "hyprpaper",
         "git",
         "zsh",
         "nvim",
