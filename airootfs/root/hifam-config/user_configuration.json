@@ -31,7 +31,8 @@
         "bootloader": "Grub",
         "plymouth": "glow"
     },
-    "custom_commands": [],
+    "custom_commands": [
+    ],
     "hostname": "archlinux",
     "kernels": [
         "linux"
@@ -52,7 +53,31 @@
         "type": "nm"
     },
     "ntp": true,
-    "packages": [],
+    "packages": [
+        "curl",
+        "alsa-utils",
+        "amd-ucode",
+        "base",
+        "base-devel",
+        "linux",
+        "linux-firmware",
+        "git",
+        "zsh",
+        "nvim",
+        "nvm",
+        "kitty",
+        "keyd",
+        "gparted",
+        "gimp",
+        "inkscape",
+        "flatpak",
+        "tmux",
+        "fzf",
+        "ripgrep",
+        "jq",
+        "yq",
+        "zoxide"
+    ],
     "pacman_config": {
         "color": true,
         "parallel_downloads": 5

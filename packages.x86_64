@@ -5,6 +5,7 @@ archinstall
 b43-fwcutter
 base
 bcachefs-tools
+curl
 bind
 bolt
 brltty

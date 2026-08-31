@@ -32,6 +32,7 @@ else
     USE_CONFIG=true
 fi
 
+
 # Show what will be done
 echo "Installation plan:"
 echo "1. Run archinstall with your configuration"
@@ -168,10 +169,240 @@ if [ -n "$USER_INFO" ]; then
     echo "Copying shell configs..."
     arch-chroot "$MOUNT_POINT" cp /usr/share/hifam/zshrc "$USER_HOME/.zshrc" 2>/dev/null || true
     arch-chroot "$MOUNT_POINT" cp /usr/share/hifam/p10k.zsh "$USER_HOME/.p10k.zsh" 2>/dev/null || true
-    
-    # Fix ownership
-    echo "Fixing file ownership..."
-    arch-chroot "$MOUNT_POINT" chown -R "$USERNAME:$USERNAME" "$USER_HOME"
+
+        # =========================================================
+    # Everything below runs inside the installed system
+    # =========================================================
+
+    echo ""
+    echo "=== Configuring installed system ==="
+
+    # ---------------------------------------------------------
+    # Install and configure mouseless
+    # ---------------------------------------------------------
+
+    echo "Setting up mouseless..."
+
+    arch-chroot "$MOUNT_POINT" groupadd --system mouseless 2>/dev/null || true
+
+    arch-chroot "$MOUNT_POINT" usermod \
+        -aG input,mouseless "$USERNAME"
+
+    arch-chroot "$MOUNT_POINT" tee \
+        /etc/udev/rules.d/99-mouseless-input.rules > /dev/null <<EOF
+KERNEL=="uinput", GROUP="mouseless", MODE:="0660"
+EOF
+
+    arch-chroot "$MOUNT_POINT" modprobe uinput
+
+    arch-chroot "$MOUNT_POINT" sh -c \
+        'echo uinput > /etc/modules-load.d/uinput.conf'
+
+    arch-chroot "$MOUNT_POINT" udevadm control --reload-rules
+    arch-chroot "$MOUNT_POINT" udevadm trigger
+
+    echo "Installing Flatpak..."
+    arch-chroot "$MOUNT_POINT" pacman -S --needed --noconfirm flatpak
+
+    arch-chroot "$MOUNT_POINT" flatpak remote-add \
+    --if-not-exists \
+    flathub \
+    https://dl.flathub.org/repo/flathub.flatpakrepo
+
+    arch-chroot "$MOUNT_POINT" flatpak install -y \
+        flathub org.gnome.Platform//50
+
+    echo "Adding Sonuscape repository..."
+
+    arch-chroot "$MOUNT_POINT" runuser -u "$USERNAME" -- env \
+        HOME="$USER_HOME" \
+        flatpak remote-add --user --if-not-exists \
+        sonuscape \
+        https://dl.sonuscape.net/flatpak/sonuscape.flatpakrepo
+
+    echo "Installing mouseless..."
+
+    arch-chroot "$MOUNT_POINT" runuser -u "$USERNAME" -- env \
+        HOME="$USER_HOME" \
+        flatpak install --user -y \
+        sonuscape net.sonuscape.mouseless
+
+    echo "Configuring mouseless..."
+
+    arch-chroot "$MOUNT_POINT" runuser -u "$USERNAME" -- env \
+        HOME="$USER_HOME" \
+        mkdir -p \
+        "$USER_HOME/.var/app/net.sonuscape.mouseless/data/mouseless/configs"
+
+    arch-chroot "$MOUNT_POINT" cp \
+        /usr/share/hifam/mouseless/config.yaml \
+        "$USER_HOME/.var/app/net.sonuscape.mouseless/data/mouseless/configs/config.yaml"
+
+    arch-chroot "$MOUNT_POINT" chown -R \
+        "$USERNAME:$USERNAME" \
+        "$USER_HOME/.var/app/net.sonuscape.mouseless"
+
+    echo "✓ Mouseless configured!"
+
+    # ---------------------------------------------------------
+    # Build and install wl-kbptr
+    # ---------------------------------------------------------
+
+    echo "Setting up wl-kbptr..."
+
+    echo "Installing wl-kbptr build dependencies..."
+
+    arch-chroot "$MOUNT_POINT" pacman -S --needed --noconfirm \
+        git \
+        meson \
+        ninja \
+        opencv
+
+    arch-chroot "$MOUNT_POINT" runuser -u "$USERNAME" -- env \
+        HOME="$USER_HOME" \
+        bash -c '
+            rm -rf "$HOME/wl-kbptr"
+
+            git clone \
+                https://github.com/DereckAn/wl-kbptr.git \
+                "$HOME/wl-kbptr"
+
+            cd "$HOME/wl-kbptr"
+
+            git checkout fix/opencv5
+
+            meson setup build \
+                --buildtype=release \
+                -Dopencv=enabled
+
+            meson compile -C build
+        '
+
+    arch-chroot "$MOUNT_POINT" cp \
+        "$USER_HOME/wl-kbptr/build/wl-kbptr" \
+        /usr/bin/wl-kbptr
+
+    arch-chroot "$MOUNT_POINT" chown -R \
+        "$USERNAME:$USERNAME" \
+        "$USER_HOME/wl-kbptr"
+
+    echo "✓ wl-kbptr installed!"
+
+    # ---------------------------------------------------------
+    # Install Oh My Zsh
+    # ---------------------------------------------------------
+
+    echo "Installing Oh My Zsh..."
+
+    arch-chroot "$MOUNT_POINT" runuser -u "$USERNAME" -- env \
+        HOME="$USER_HOME" \
+        USER="$USERNAME" \
+        LOGNAME="$USERNAME" \
+        zsh -c '
+            RUNZSH=no CHSH=no \
+            sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+        '
+
+    # ---------------------------------------------------------
+    # Install Powerlevel10k
+    # ---------------------------------------------------------
+
+    echo "Installing Powerlevel10k..."
+
+    arch-chroot "$MOUNT_POINT" runuser -u "$USERNAME" -- env \
+        HOME="$USER_HOME" \
+        git clone --depth=1 \
+        https://github.com/romkatv/powerlevel10k.git \
+        "$USER_HOME/.oh-my-zsh/custom/themes/powerlevel10k"
+
+    # ---------------------------------------------------------
+    # Install zsh-autosuggestions
+    # ---------------------------------------------------------
+
+    echo "Installing zsh plugins..."
+
+    arch-chroot "$MOUNT_POINT" runuser -u "$USERNAME" -- env \
+        HOME="$USER_HOME" \
+        git clone \
+        https://github.com/zsh-users/zsh-autosuggestions \
+        "$USER_HOME/.oh-my-zsh/custom/plugins/zsh-autosuggestions"
+
+    # ---------------------------------------------------------
+    # Install yay
+    # ---------------------------------------------------------
+    #
+    echo "Installing sudo..."
+
+    arch-chroot "$MOUNT_POINT" pacman -S --needed --noconfirm sudo
+
+    echo "Configuring sudo for $USERNAME..."
+
+    arch-chroot "$MOUNT_POINT" bash -c \
+        "echo '$USERNAME ALL=(ALL:ALL) ALL' > /etc/sudoers.d/$USERNAME"
+
+    arch-chroot "$MOUNT_POINT" chmod 440 \
+        "/etc/sudoers.d/$USERNAME"
+
+    arch-chroot "$MOUNT_POINT" visudo -c
+
+
+    echo "Installing yay for $USERNAME..."
+
+    arch-chroot "$MOUNT_POINT" pacman -S --needed --noconfirm \
+        base-devel git
+
+    arch-chroot "$MOUNT_POINT" runuser -u "$USERNAME" -- env \
+        HOME="$USER_HOME" \
+        USER="$USERNAME" \
+        LOGNAME="$USERNAME" \
+        bash -c '
+            cd /tmp
+
+            rm -rf yay
+
+            git clone \
+                https://aur.archlinux.org/yay.git
+
+            cd yay
+
+            makepkg -si --noconfirm
+
+            cd /
+
+            rm -rf /tmp/yay
+        '
+
+    echo "✓ yay installed!"
+
+    # ---------------------------------------------------------
+    # Set zsh as default shell
+    # ---------------------------------------------------------
+
+    echo "Setting zsh as default shell..."
+
+    arch-chroot "$MOUNT_POINT" chsh \
+        -s /usr/bin/zsh \
+        "$USERNAME"
+
+    # ---------------------------------------------------------
+    # Final ownership
+    # ---------------------------------------------------------
+
+    echo "Fixing user ownership..."
+
+    arch-chroot "$MOUNT_POINT" chown -R \
+        "$USERNAME:$USERNAME" \
+        "$USER_HOME"
+
+    arch-chroot "$MOUNT_POINT" chown -R \
+        "$USERNAME:$USERNAME" \
+        /usr/share/hifam
+
+    arch-chroot "$MOUNT_POINT" chmod -R \
+        u+rwX \
+        /usr/share/hifam
+
+    echo "✓ User environment configured!"
     
     echo "✓ Dotfiles configured for $USERNAME!"
 else
