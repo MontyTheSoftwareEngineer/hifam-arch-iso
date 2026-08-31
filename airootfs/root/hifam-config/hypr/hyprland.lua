@@ -54,7 +54,7 @@ hl.on("hyprland.start", function ()
    -- hl.exec_cmd("kitty -e sudo /usr/share/hifam/hifam-arch-scripts/run.sh")
    -- Open a regular terminal after setup starts
    hl.exec_cmd("hyprpaper")
-   hl.exec_cmd(terminal)
+   hl.exec_cmd("qs")
   -- hl.exec_cmd("waybar")
   -- hl.exec_cmd("waybar & hyprpaper & firefox")
 end)
