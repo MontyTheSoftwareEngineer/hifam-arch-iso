@@ -1,34 +1,26 @@
 #!/bin/bash
-# HiFam Arch Installer Wrapper
-# Interactive disk selection -> generates archinstall config -> runs archinstall
+# Interactive disk selection -> generates archinstall config -> runs archinstall.
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_DIR="$SCRIPT_DIR/hifam-config"
 
 BASE_CONFIG="$CONFIG_DIR/user_configuration.json"
 CREDS_CONFIG="$CONFIG_DIR/user_credentials.json"
+DEFAULT_HOSTNAME="$(jq -r '.hostname // "archlinux"' "$BASE_CONFIG")"
 
 echo "╔════════════════════════════════════════╗"
 echo "║       HiFam Arch Installer             ║"
 echo "╚════════════════════════════════════════╝"
 echo ""
 
-# =========================================================
-# Root check
-# =========================================================
-
 if [ "$EUID" -ne 0 ]; then
     echo "This script must be run as root or with sudo"
     exit 1
 fi
 
-# =========================================================
-# Check dependencies
-# =========================================================
-
-for cmd in lsblk jq archinstall; do
+for cmd in lsblk jq archinstall numfmt; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
         echo "ERROR: '$cmd' is required but was not found."
         exit 1
@@ -47,56 +39,53 @@ if [ ! -f "$CREDS_CONFIG" ]; then
     exit 1
 fi
 
-# =========================================================
-# Find available disks
-# =========================================================
-
 echo "Available disks:"
 echo ""
 
-mapfile -t DISKS < <(
-    lsblk -dpno NAME,SIZE,MODEL \
-        -e 7,11
-)
+mapfile -t DISK_PATHS < <(lsblk -bdpn -o NAME -e 7,11)
 
-if [ "${#DISKS[@]}" -eq 0 ]; then
+if [ "${#DISK_PATHS[@]}" -eq 0 ]; then
     echo "No disks found."
     exit 1
 fi
 
-for i in "${!DISKS[@]}"; do
-    printf "%d) %s\n" "$((i + 1))" "${DISKS[$i]}"
+for i in "${!DISK_PATHS[@]}"; do
+    disk_path="${DISK_PATHS[$i]}"
+    disk_size_bytes="$(lsblk -bdn -o SIZE "$disk_path")"
+    disk_model="$(lsblk -dn -o MODEL "$disk_path")"
+    printf "%d) %s  %s  %s\n" \
+        "$((i + 1))" \
+        "$disk_path" \
+        "$(numfmt --to=iec --suffix=B "$disk_size_bytes")" \
+        "${disk_model:-Unknown model}"
 done
 
 echo ""
 
-# =========================================================
-# Select disk
-# =========================================================
-
 while true; do
-    read -rp "Select installation disk [1-${#DISKS[@]}]: " DISK_NUMBER
+    read -rp "Select installation disk [1-${#DISK_PATHS[@]}]: " DISK_NUMBER
 
     if [[ "$DISK_NUMBER" =~ ^[0-9]+$ ]] &&
        [ "$DISK_NUMBER" -ge 1 ] &&
-       [ "$DISK_NUMBER" -le "${#DISKS[@]}" ]; then
+       [ "$DISK_NUMBER" -le "${#DISK_PATHS[@]}" ]; then
         break
     fi
 
     echo "Invalid selection."
 done
 
-SELECTED_LINE="${DISKS[$((DISK_NUMBER - 1))]}"
-INSTALL_DISK="$(echo "$SELECTED_LINE" | awk '{print $1}')"
+INSTALL_DISK="${DISK_PATHS[$((DISK_NUMBER - 1))]}"
+DISK_SIZE_BYTES="$(lsblk -bdn -o SIZE "$INSTALL_DISK")"
+DISK_SIZE_MIB=$((DISK_SIZE_BYTES / 1024 / 1024))
+DISK_MODEL="$(lsblk -dn -o MODEL "$INSTALL_DISK")"
 
 echo ""
 echo "Selected disk:"
-echo "  $SELECTED_LINE"
+printf "  %s  %s  %s\n" \
+    "$INSTALL_DISK" \
+    "$(numfmt --to=iec --suffix=B "$DISK_SIZE_BYTES")" \
+    "${DISK_MODEL:-Unknown model}"
 echo ""
-
-# =========================================================
-# Destructive warning
-# =========================================================
 
 echo "╔════════════════════════════════════════════════════════════╗"
 echo "║                         WARNING                            ║"
@@ -116,10 +105,6 @@ if [ "$CONFIRM" != "ERASE" ]; then
     echo "Installation cancelled."
     exit 0
 fi
-
-# =========================================================
-# Filesystem selection
-# =========================================================
 
 echo ""
 echo "Filesystem:"
@@ -145,10 +130,6 @@ while true; do
             ;;
     esac
 done
-
-# =========================================================
-# Swap selection
-# =========================================================
 
 echo ""
 echo "Swap:"
@@ -180,182 +161,190 @@ while true; do
     esac
 done
 
-# =========================================================
-# Generate UUIDs
-# =========================================================
+echo ""
+while true; do
+    read -rp "Hostname [$DEFAULT_HOSTNAME]: " HOSTNAME
+    HOSTNAME="${HOSTNAME:-$DEFAULT_HOSTNAME}"
+
+    if [[ "$HOSTNAME" =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$ ]]; then
+        break
+    fi
+
+    echo "Invalid hostname. Use letters, numbers, and hyphens only."
+done
 
 EFI_UUID="$(cat /proc/sys/kernel/random/uuid)"
 ROOT_UUID="$(cat /proc/sys/kernel/random/uuid)"
 
+EFI_START_MIB=1
+EFI_SIZE_MIB=1024
+SWAP_SIZE_MIB=$((8 * 1024))
+ROOT_MIN_SIZE_MIB=$((10 * 1024))
+END_BUFFER_MIB=16
+ROOT_START_MIB=$((EFI_START_MIB + EFI_SIZE_MIB))
+MIN_REQUIRED_MIB=$((ROOT_START_MIB + ROOT_MIN_SIZE_MIB + END_BUFFER_MIB))
+
 if [ "$SWAP_TYPE" = "partition" ]; then
     SWAP_UUID="$(cat /proc/sys/kernel/random/uuid)"
+    SWAP_START_MIB=$ROOT_START_MIB
+    ROOT_START_MIB=$((SWAP_START_MIB + SWAP_SIZE_MIB))
+    MIN_REQUIRED_MIB=$((ROOT_START_MIB + ROOT_MIN_SIZE_MIB + END_BUFFER_MIB))
 fi
 
-# =========================================================
-# Create partition configuration
-# =========================================================
-
-EFI_PARTITION='
-{
-    "btrfs": [],
-    "dev_path": null,
-    "flags": [
-        "boot",
-        "esp"
-    ],
-    "fs_type": "fat32",
-    "mount_options": [],
-    "mountpoint": "/boot",
-    "obj_id": "'"$EFI_UUID"'",
-    "size": {
-        "sector_size": {
-            "unit": "B",
-            "value": 512
-        },
-        "unit": "MiB",
-        "value": 1024
-    },
-    "start": {
-        "sector_size": {
-            "unit": "B",
-            "value": 512
-        },
-        "unit": "MiB",
-        "value": 1
-    },
-    "status": "create",
-    "type": "primary"
-}
-'
-
-# =========================================================
-# Root partition
-# =========================================================
-
-ROOT_PARTITION='
-{
-    "btrfs": [],
-    "dev_path": null,
-    "flags": [],
-    "fs_type": "'"$FILESYSTEM"'",
-    "mount_options": [],
-    "mountpoint": "/",
-    "obj_id": "'"$ROOT_UUID"'",
-    "size": {
-        "sector_size": {
-            "unit": "B",
-            "value": 512
-        },
-        "unit": "GiB",
-        "value": 999999
-    },
-    "start": {
-        "sector_size": {
-            "unit": "B",
-            "value": 512
-        },
-        "unit": "MiB",
-        "value": 1025
-    },
-    "status": "create",
-    "type": "primary"
-}
-'
-
-# =========================================================
-# Build disk_config
-# =========================================================
-
-if [ "$SWAP_TYPE" = "partition" ]; then
-
-    SWAP_PARTITION='
-    {
-        "btrfs": [],
-        "dev_path": null,
-        "flags": [],
-        "fs_type": "linux-swap",
-        "mount_options": [],
-        "mountpoint": null,
-        "obj_id": "'"$SWAP_UUID"'",
-        "size": {
-            "sector_size": {
-                "unit": "B",
-                "value": 512
-            },
-            "unit": "GiB",
-            "value": 8
-        },
-        "start": {
-            "sector_size": {
-                "unit": "B",
-                "value": 512
-            },
-            "unit": "MiB",
-            "value": 1025
-        },
-        "status": "create",
-        "type": "primary"
-    }
-    '
-
-    # For a swap partition we need root to come after it.
-    ROOT_START="9217"
-
-    ROOT_PARTITION='
-    {
-        "btrfs": [],
-        "dev_path": null,
-        "flags": [],
-        "fs_type": "'"$FILESYSTEM"'",
-        "mount_options": [],
-        "mountpoint": "/",
-        "obj_id": "'"$ROOT_UUID"'",
-        "size": {
-            "sector_size": {
-                "unit": "B",
-                "value": 999999
-            },
-            "unit": "GiB",
-            "value": 999999
-        },
-        "start": {
-            "sector_size": {
-                "unit": "B",
-                "value": 512
-            },
-            "unit": "MiB",
-            "value": "'"$ROOT_START"'"
-        },
-        "status": "create",
-        "type": "primary"
-    }
-    '
-
-    PARTITIONS="$EFI_PARTITION,$SWAP_PARTITION,$ROOT_PARTITION"
-
-else
-
-    PARTITIONS="$EFI_PARTITION,$ROOT_PARTITION"
-
+if [ "$DISK_SIZE_MIB" -le "$MIN_REQUIRED_MIB" ]; then
+    echo "ERROR: $INSTALL_DISK is too small for the selected layout."
+    printf "Need more than %s MiB, but disk has %s MiB.\n" \
+        "$MIN_REQUIRED_MIB" \
+        "$DISK_SIZE_MIB"
+    exit 1
 fi
 
-# =========================================================
-# Generate temporary configuration
-# =========================================================
+ROOT_SIZE_MIB=$((DISK_SIZE_MIB - ROOT_START_MIB - END_BUFFER_MIB))
+
+if [ "$ROOT_SIZE_MIB" -lt "$ROOT_MIN_SIZE_MIB" ]; then
+    echo "ERROR: Not enough remaining space for the root partition."
+    printf "Root would be %s MiB after reserving install overhead, but at least %s MiB is required.\n" \
+        "$ROOT_SIZE_MIB" \
+        "$ROOT_MIN_SIZE_MIB"
+    exit 1
+fi
+
+PARTITIONS_JSON="$(
+    jq -n \
+        --arg efi_uuid "$EFI_UUID" \
+        --arg root_uuid "$ROOT_UUID" \
+        --arg filesystem "$FILESYSTEM" \
+        --arg swap_type "$SWAP_TYPE" \
+        --arg swap_uuid "${SWAP_UUID:-}" \
+        --argjson efi_start_mib "$EFI_START_MIB" \
+        --argjson efi_size_mib "$EFI_SIZE_MIB" \
+        --argjson swap_start_mib "${SWAP_START_MIB:-0}" \
+        --argjson swap_size_mib "$SWAP_SIZE_MIB" \
+        --argjson root_start_mib "$ROOT_START_MIB" \
+        --argjson root_size_mib "$ROOT_SIZE_MIB" \
+        '
+        [
+            {
+                btrfs: [],
+                dev_path: null,
+                flags: ["boot", "esp"],
+                fs_type: "fat32",
+                mount_options: [],
+                mountpoint: "/boot",
+                obj_id: $efi_uuid,
+                size: {
+                    sector_size: {
+                        unit: "B",
+                        value: 512
+                    },
+                    unit: "MiB",
+                    value: $efi_size_mib
+                },
+                start: {
+                    sector_size: {
+                        unit: "B",
+                        value: 512
+                    },
+                    unit: "MiB",
+                    value: $efi_start_mib
+                },
+                status: "create",
+                type: "primary"
+            }
+        ]
+        + (
+            if $swap_type == "partition" then
+                [
+                    {
+                        btrfs: [],
+                        dev_path: null,
+                        flags: [],
+                        fs_type: "linux-swap",
+                        mount_options: [],
+                        mountpoint: null,
+                        obj_id: $swap_uuid,
+                        size: {
+                            sector_size: {
+                                unit: "B",
+                                value: 512
+                            },
+                            unit: "MiB",
+                            value: $swap_size_mib
+                        },
+                        start: {
+                            sector_size: {
+                                unit: "B",
+                                value: 512
+                            },
+                            unit: "MiB",
+                            value: $swap_start_mib
+                        },
+                        status: "create",
+                        type: "primary"
+                    }
+                ]
+            else
+                []
+            end
+        )
+        + [
+            {
+                btrfs: [],
+                dev_path: null,
+                flags: [],
+                fs_type: $filesystem,
+                mount_options: [],
+                mountpoint: "/",
+                obj_id: $root_uuid,
+                size: {
+                    sector_size: {
+                        unit: "B",
+                        value: 512
+                    },
+                    unit: "MiB",
+                    value: $root_size_mib
+                },
+                start: {
+                    sector_size: {
+                        unit: "B",
+                        value: 512
+                    },
+                    unit: "MiB",
+                    value: $root_start_mib
+                },
+                status: "create",
+                type: "primary"
+            }
+        ]
+        '
+)"
 
 TEMP_CONFIG="$(mktemp /tmp/hifam-archinstall-XXXXXX.json)"
+KEEP_TEMP_CONFIG=0
 
-trap 'rm -f "$TEMP_CONFIG"' EXIT
+cleanup() {
+    if [ "$KEEP_TEMP_CONFIG" -eq 0 ]; then
+        rm -f "$TEMP_CONFIG"
+    fi
+}
+
+trap cleanup EXIT
 
 echo ""
 echo "Generating archinstall configuration..."
 
 jq \
     --arg disk "$INSTALL_DISK" \
-    --argjson partitions "[$PARTITIONS]" \
+    --argjson partitions "$PARTITIONS_JSON" \
     --arg swap_type "$SWAP_TYPE" \
-    --arg filesystem "$FILESYSTEM" \
+    --arg hostname "$HOSTNAME" \
     '
+    .script = "guided"
+    |
+    .silent = true
+    |
+    .hostname = $hostname
+    |
     .disk_config = {
         "config_type": "default_layout",
         "device_modifications": [
@@ -374,19 +363,11 @@ jq \
     ' \
     "$BASE_CONFIG" > "$TEMP_CONFIG"
 
-# =========================================================
-# Validate generated JSON
-# =========================================================
-
 if ! jq empty "$TEMP_CONFIG" >/dev/null 2>&1; then
     echo "ERROR: Generated JSON is invalid."
     cat "$TEMP_CONFIG"
     exit 1
 fi
-
-# =========================================================
-# Display final configuration
-# =========================================================
 
 echo ""
 echo "╔════════════════════════════════════════╗"
@@ -395,19 +376,14 @@ echo "╠═══════════════════════�
 printf "║ Disk:       %-25s ║\n" "$INSTALL_DISK"
 printf "║ Filesystem: %-25s ║\n" "$FILESYSTEM"
 printf "║ Swap:       %-25s ║\n" "$SWAP_TYPE"
+printf "║ Hostname:   %-25s ║\n" "$HOSTNAME"
 echo "╚════════════════════════════════════════╝"
 echo ""
 
 echo "Generated disk configuration:"
 echo ""
-
 jq '.disk_config' "$TEMP_CONFIG"
-
 echo ""
-
-# =========================================================
-# Final confirmation
-# =========================================================
 
 read -rp "Start Arch installation? [y/N]: " FINAL_CONFIRM
 
@@ -416,34 +392,30 @@ if [[ ! "$FINAL_CONFIRM" =~ ^[Yy]$ ]]; then
     exit 0
 fi
 
-# =========================================================
-# Run archinstall
-# =========================================================
-
 echo ""
 echo "╔════════════════════════════════════════╗"
 echo "║       Starting archinstall...          ║"
 echo "╚════════════════════════════════════════╝"
 echo ""
 
-archinstall \
-    --config "$TEMP_CONFIG" \
-    --creds "$CREDS_CONFIG"
-
-INSTALL_EXIT=$?
+if archinstall --config "$TEMP_CONFIG" --creds "$CREDS_CONFIG" --silent; then
+    INSTALL_EXIT=0
+else
+    INSTALL_EXIT=$?
+fi
 
 echo ""
 echo "archinstall exited with code: $INSTALL_EXIT"
 
 if [ "$INSTALL_EXIT" -ne 0 ]; then
+    KEEP_TEMP_CONFIG=1
     echo ""
     echo "❌ Arch installation failed."
     echo ""
-    echo "The generated configuration was:"
-    echo "$TEMP_CONFIG"
+    echo "Generated configuration preserved at:"
+    echo "  $TEMP_CONFIG"
     exit "$INSTALL_EXIT"
 fi
 
 echo ""
 echo "✓ Arch installation completed successfully."
-

@@ -166,4 +166,4 @@ keyd
 zoxide
 jq
 gpu-screen-recorder
-nvim
+neovim

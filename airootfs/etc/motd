@@ -9,15 +9,10 @@ This ISO includes your custom configurations and dotfiles.
 
 Installation steps:
   1. Connect to Wi-Fi (if needed): iwctl
-  2. Run archinstall:
-     archinstall --config /root/hifam-config/user_configuration.json \
-                 --creds /root/hifam-config/user_credentials.json
-     (Or just: archinstall for manual setup)
-  3. After archinstall finishes, choose "No" to chroot/reboot
-  4. Copy configs: ./copy-hifam-configs.sh
-  5. Reboot: umount -R /mnt && reboot
+  2. Run the full installer: ./install-hifam.sh
+     (Or use ./arch-install.sh then ./post-install.sh)
+  3. Reboot: umount -R /mnt && reboot
 
 Your configs will be in /usr/share/hifam after installation.
 
 Documentation: /root/README.md  |  Configs: /root/hifam-config/
-

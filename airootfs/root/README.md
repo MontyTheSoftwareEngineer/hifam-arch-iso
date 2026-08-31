@@ -22,37 +22,37 @@ This is a custom Arch Linux ISO with pre-configured settings and dotfiles.
 
 If you prefer manual installation:
 
-1. Run archinstall with the included config:
+1. Run the interactive Arch install helper:
    ```bash
-   archinstall --config /root/hifam-config/user_configuration.json \
-               --creds /root/hifam-config/user_credentials.json
+   ./arch-install.sh
    ```
 
 2. After installation, run post-install setup:
    ```bash
-   arch-chroot /mnt /root/post-install.sh
+   ./post-install.sh
    ```
 
 ## What Happens During Post-Installation
 
 The post-install script will:
 - Copy all HiFam configurations to your new system
+- Restore executable permissions on copied shell scripts
 - Set up keyd for keyboard customization
-- Install additional packages from your list
 - Configure dotfiles (nvim, kitty, hypr, tmux, zsh)
-- Create symlinks to your dotfiles
-- Run your custom setup scripts
+- Run dedicated chroot helper scripts for sudo/yay, mouseless, wl-kbptr, zsh, and system tweaks
 
 ## Configuration Files Location
 
 In the ISO:
 - `/root/hifam-config/` - All your dotfiles and configs
 - `/root/install-hifam.sh` - Main installer script
+- `/root/arch-install.sh` - Interactive archinstall wrapper
 - `/root/post-install.sh` - Post-installation script
+- `/root/postinstall/` - Chroot helper scripts copied into the new install
 
 After installation:
-- `/root/hifam-config/` - Configuration files (in the new system)
-- Logs in `/var/log/hifam-*.log`
+- `/usr/share/hifam/` - Configuration files in the new system
+- `/root/hifam-postinstall/` - Copied post-install helper scripts
 
 ## Customization
 
@@ -60,6 +60,7 @@ All your configuration files are in `/root/hifam-config/`:
 - `user_configuration.json` - archinstall config
 - `user_credentials.json` - user credentials
 - `hifam-arch-scripts/` - Post-install scripts
+- `tmux/tmux.conf` - Tmux configuration
 - `keyd/`, `nvim/`, `kitty/`, `hypr/` - Dotfiles directories
 - Various other dotfiles (zshrc, tmux.conf, p10k.zsh)
 
