@@ -9,8 +9,23 @@ ShellRoot {
             required property var modelData
             anchors { top: true; left: true; right: true }
             implicitHeight: 38
-            color: Theme.backgroundColor
+            color: Qt.rgba(0,0,0,0)
 
+            Workspaces {
+                id: ws
+                anchors.left: parent.left
+                anchors.leftMargin: Theme.spacing
+                anchors.top: parent.top
+            }
+
+            Pill {
+                id: screenRecordingIndicator
+                anchors.centerIn: parent
+                icon: "hangout_video"
+                iconColor: "#ff0000"
+                text: "Recording"
+                visible: screenRecordingIndicatorPoll.text !== ""
+            }
             SystemClock {
                 id: clock
                 precision: SystemClock.Precision.Minutes
@@ -34,6 +49,12 @@ ShellRoot {
             Poll {
                 id: wifi
                 cmd: "nmcli -t -f active.ssid dev wifi | grep '^yes:' | cut -d: -f2"
+            }
+
+            Poll {
+                id: screenRecordingIndicatorPoll
+                cmd: "pgrep -f \"^gpu-screen-recorder\""
+                interval: 3000
             }
 
             Row {

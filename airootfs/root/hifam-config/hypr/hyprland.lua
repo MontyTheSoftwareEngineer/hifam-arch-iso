@@ -16,8 +16,9 @@
 -- Create your files separately and then require them like this:
 -- require("myColors")
 
-require("hypr.autostart")
-require("hypr.bindings")
+-- These modules live alongside hyprland.lua inside ~/.config/hypr/.
+require("autostart")
+require("bindings")
 
 ------------------
 ---- MONITORS ----
@@ -320,4 +321,3 @@ hl.window_rule({
     },
     float = true,
 })
-

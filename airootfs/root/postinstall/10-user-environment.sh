@@ -8,7 +8,7 @@ ensure_target_user
 
 mkdir -p "$USER_HOME/.config/tmux"
 
-for config_name in nvim kitty hypr waybar mouseless quickshell; do
+for config_name in nvim kitty hypr waybar wl-kbptr mouseless quickshell; do
     if [ -d "$CONFIG_DIR/$config_name" ]; then
         backup_user_config_dir "$config_name"
         ln -sfn "$CONFIG_DIR/$config_name" "$USER_HOME/.config/$config_name"

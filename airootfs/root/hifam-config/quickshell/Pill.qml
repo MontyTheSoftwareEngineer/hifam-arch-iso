@@ -38,6 +38,7 @@ Rectangle {
             id: textLabel
             leftPadding: 6
             rightPadding: 6
+            color: Theme.textColor
             text: root.text
             anchors.verticalCenter: parent.verticalCenter
             font.family: Theme.font

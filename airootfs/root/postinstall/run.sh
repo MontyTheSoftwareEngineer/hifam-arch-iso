@@ -21,7 +21,8 @@ for script in "$SCRIPT_DIR"/[0-9][0-9]-*.sh; do
 done
 
 chown -R "$USERNAME:$USERNAME" "$USER_HOME"
-chmod -R a+rX /usr/share/hifam
+chown -R "$USERNAME:$USERNAME" /usr/share/hifam
+chmod -R u+rwX,go+rX /usr/share/hifam
 
 echo ""
 echo "HiFam post-install tasks completed."

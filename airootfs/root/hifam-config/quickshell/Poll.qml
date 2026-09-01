@@ -8,6 +8,7 @@ Scope {
     property string cmd: ""
     property int interval: 5000
     property string text: ""
+    property bool debug: false
 
     Process {
         id: process
@@ -19,7 +20,9 @@ Scope {
             id: output
             onStreamFinished: {
                 root.text = output.text.trim()
-                // console.log("Poll: " + root.cmd + " -> " + root.text)
+                if (root.debug) {
+                    console.log("Poll: " + root.cmd + " -> " + root.text)
+                }
             }
         }
 
