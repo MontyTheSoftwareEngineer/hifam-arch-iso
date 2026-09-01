@@ -1,17 +1,3 @@
-# printf "${blue_bg}${white}⭐ ⭐ ⭐ ⭐ ⭐ ⭐ ${reset}${red}██████████████████${reset}\n"
-# printf "${blue_bg}${white}  ⭐ ⭐ ⭐ ⭐ ⭐  ${reset}${white}██████████████████${reset}\n"
-# printf "${blue_bg}${white}⭐ ⭐ ⭐ ⭐ ⭐ ⭐ ${reset}${red}██████████████████${reset}\n"
-# printf "${blue_bg}${white}  ⭐ ⭐ ⭐ ⭐ ⭐  ${reset}${white}██████████████████${reset}\n"
-# printf "${blue_bg}${white}⭐ ⭐ ⭐ ⭐ ⭐ ⭐ ${reset}${red}██████████████████${reset}\n"
-# printf "${blue_bg}${white}  ⭐ ⭐ ⭐ ⭐ ⭐  ${reset}${white}██████████████████${reset}\n"
-# printf "${blue_bg}${white}⭐ ⭐ ⭐ ⭐ ⭐ ⭐ ${reset}${red}██████████████████${reset}\n"
-#
-# printf "${white}████████████████████████████████████${reset}\n"
-# printf "${red}████████████████████████████████████${reset}\n"
-# printf "${white}████████████████████████████████████${reset}\n"
-# printf "${red}████████████████████████████████████${reset}\n"
-# printf "${white}████████████████████████████████████${reset}\n"
-# printf "${red}████████████████████████████████████${reset}\n"
 kitty +kitten icat --align center /usr/share/hifam/images/hifam-flag.png
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
@@ -133,8 +119,4 @@ source $ZSH/oh-my-zsh.sh
 eval "$(zoxide init zsh)"
 alias cd="z"
 
-export PATH=/home/hpham/Qt/6.7.0/gcc_64/bin:/home/hpham/OmarchyDotFiles/scripts:~/bin:/opt/st/stm32cubeide_1.18.1/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.linux64_1.0.0.202410170706/tools/bin:$PATH
-
-
-# opencode
-export PATH=/home/hpham/.opencode/bin:$PATH
+export PATH=/usr/share/hifam/scripts:$PATH
