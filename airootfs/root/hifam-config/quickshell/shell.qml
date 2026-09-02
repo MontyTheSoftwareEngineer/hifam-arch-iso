@@ -1,5 +1,9 @@
 import QtQuick
 import Quickshell
+import "Network"
+import "Calendar"
+import "Volume"
+import "Battery"
 
 ShellRoot {
     Variants {
@@ -17,7 +21,6 @@ ShellRoot {
                 anchors.leftMargin: Theme.spacing
                 anchors.top: parent.top
             }
-
             Pill {
                 id: screenRecordingIndicator
                 anchors.centerIn: parent
@@ -32,26 +35,12 @@ ShellRoot {
             }
 
             Poll {
-                id: volume
-                cmd: "wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{print $2}'"
-            }
-
-            Poll {
-                id: battery
-                cmd: "awk '{print $1}' /sys/class/power_supply/BAT0/capacity"
-            }
-
-            Poll {
                 id: bluetooth
-                cmd: "bluetoothctl show | grep 'Powered: yes' && echo on || echo off"
+                cmd: "bluetoothctl show | grep -q 'Powered: yes' && { [ -n \"$(bluetoothctl devices Connected)\" ] && echo connected || echo on; } || echo off"
             }
 
             Poll {
-                id: wifi
-                cmd: "nmcli -t -f active.ssid dev wifi | grep '^yes:' | cut -d: -f2"
-            }
-
-            Poll {
+                debug: true
                 id: screenRecordingIndicatorPoll
                 cmd: "pgrep -f \"^gpu-screen-recorder\""
                 interval: 3000
@@ -63,43 +52,35 @@ ShellRoot {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: Theme.spacing
 
-                Pill {
-                    icon: "volume_up"
-                    iconColor: Theme.iconColor
-                    text: volume.text * 100 + "%"
-                }
+                Volume { id: volumeWidget }
+
+                Battery { id: batteryWidget }
 
                 Pill {
-                    icon: "battery_full"
+                    icon: bluetooth.text === "connected" ? "bluetooth_connected"
+                        : (bluetooth.text === "on" ? "bluetooth" : "bluetooth_disabled")
                     iconColor: Theme.iconColor
-                    text: battery.text + "%"
-                }
-
-                Pill {
-                    icon: "bluetooth"
-                    iconColor: Theme.iconColor
-                    text: bluetooth.text
+                    text: bluetooth.text === "connected" ? "On and Connected"
+                        : (bluetooth.text === "on" ? "On" : "Off")
                     onClicked: {
                         Quickshell.execDetached(["kitty", "-e", "sh", "-c", "bluetui"])
                     }
                 }
 
-                Pill {
-                    icon: "wifi"
-                    iconColor: Theme.iconColor
-                    text: wifi.text
-                    onClicked: {
-                        Quickshell.execDetached(["kitty", "-e", "sh", "-c", "impala"])
-                    }
+                Network {
+                    id: network
                 }
                 Pill {
+                    id: clockPill
                     icon: "nest_clock_farsight_analog"
                     iconColor: Theme.iconColor
                     text: Qt.formatDateTime(clock.date, "hh:mm A")
-                    onClicked: {
-                        Quickshell.execDetached(["kitty", "-e", "sh", "-c", "tmux new"])
-                        Quickshell.execDetached("kitty")
-                    }
+                    onClicked: calendarPopup.toggle()
+                }
+
+                CalendarPopup {
+                    id: calendarPopup
+                    target: clockPill
                 }
             }
         }

@@ -9,6 +9,7 @@ CONFIG_DIR="$SCRIPT_DIR/hifam-config"
 BASE_CONFIG="$CONFIG_DIR/user_configuration.json"
 CREDS_CONFIG="$CONFIG_DIR/user_credentials.json"
 DEFAULT_HOSTNAME="$(jq -r '.hostname // "archlinux"' "$BASE_CONFIG")"
+DEFAULT_USERNAME=""
 
 echo "╔════════════════════════════════════════╗"
 echo "║       HiFam Arch Installer             ║"
@@ -20,7 +21,7 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-for cmd in lsblk jq archinstall numfmt; do
+for cmd in lsblk jq archinstall numfmt openssl; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
         echo "ERROR: '$cmd' is required but was not found."
         exit 1
@@ -33,10 +34,8 @@ if [ ! -f "$BASE_CONFIG" ]; then
     exit 1
 fi
 
-if [ ! -f "$CREDS_CONFIG" ]; then
-    echo "ERROR: Credentials file not found:"
-    echo "  $CREDS_CONFIG"
-    exit 1
+if [ -f "$CREDS_CONFIG" ]; then
+    DEFAULT_USERNAME="$(jq -r '.users[0].username // empty' "$CREDS_CONFIG")"
 fi
 
 echo "Available disks:"
@@ -172,6 +171,45 @@ while true; do
 
     echo "Invalid hostname. Use letters, numbers, and hyphens only."
 done
+
+echo ""
+while true; do
+    if [ -n "$DEFAULT_USERNAME" ]; then
+        read -rp "Username [$DEFAULT_USERNAME]: " USERNAME
+        USERNAME="${USERNAME:-$DEFAULT_USERNAME}"
+    else
+        read -rp "Username: " USERNAME
+    fi
+
+    if [[ "$USERNAME" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]]; then
+        break
+    fi
+
+    echo "Invalid username. Use lowercase letters, numbers, underscores, and hyphens only."
+done
+
+echo ""
+while true; do
+    read -rsp "Password: " PASSWORD
+    echo
+    read -rsp "Verify password: " PASSWORD_VERIFY
+    echo
+
+    if [ -z "$PASSWORD" ]; then
+        echo "Password cannot be empty."
+        continue
+    fi
+
+    if [ "$PASSWORD" != "$PASSWORD_VERIFY" ]; then
+        echo "Passwords do not match."
+        continue
+    fi
+
+    break
+done
+
+ENC_PASSWORD="$(printf '%s\n' "$PASSWORD" | openssl passwd -6 -stdin)"
+unset PASSWORD PASSWORD_VERIFY
 
 EFI_UUID="$(cat /proc/sys/kernel/random/uuid)"
 ROOT_UUID="$(cat /proc/sys/kernel/random/uuid)"
@@ -320,15 +358,18 @@ PARTITIONS_JSON="$(
 )"
 
 TEMP_CONFIG="$(mktemp /tmp/hifam-archinstall-XXXXXX.json)"
+TEMP_CREDS="$(mktemp /tmp/hifam-archinstall-creds-XXXXXX.json)"
 KEEP_TEMP_CONFIG=0
 
 cleanup() {
+    rm -f "$TEMP_CREDS"
     if [ "$KEEP_TEMP_CONFIG" -eq 0 ]; then
         rm -f "$TEMP_CONFIG"
     fi
 }
 
 trap cleanup EXIT
+chmod 600 "$TEMP_CREDS"
 
 echo ""
 echo "Generating archinstall configuration..."
@@ -363,9 +404,30 @@ jq \
     ' \
     "$BASE_CONFIG" > "$TEMP_CONFIG"
 
+jq -n \
+    --arg username "$USERNAME" \
+    --arg enc_password "$ENC_PASSWORD" \
+    '
+    {
+        users: [
+            {
+                enc_password: $enc_password,
+                groups: [],
+                sudo: true,
+                username: $username
+            }
+        ]
+    }
+    ' > "$TEMP_CREDS"
+
 if ! jq empty "$TEMP_CONFIG" >/dev/null 2>&1; then
     echo "ERROR: Generated JSON is invalid."
     cat "$TEMP_CONFIG"
+    exit 1
+fi
+
+if ! jq empty "$TEMP_CREDS" >/dev/null 2>&1; then
+    echo "ERROR: Generated credentials JSON is invalid."
     exit 1
 fi
 
@@ -377,6 +439,7 @@ printf "║ Disk:       %-25s ║\n" "$INSTALL_DISK"
 printf "║ Filesystem: %-25s ║\n" "$FILESYSTEM"
 printf "║ Swap:       %-25s ║\n" "$SWAP_TYPE"
 printf "║ Hostname:   %-25s ║\n" "$HOSTNAME"
+printf "║ Username:   %-25s ║\n" "$USERNAME"
 echo "╚════════════════════════════════════════╝"
 echo ""
 
@@ -398,7 +461,7 @@ echo "║       Starting archinstall...          ║"
 echo "╚════════════════════════════════════════╝"
 echo ""
 
-if archinstall --config "$TEMP_CONFIG" --creds "$CREDS_CONFIG" --silent; then
+if archinstall --config "$TEMP_CONFIG" --creds "$TEMP_CREDS" --silent; then
     INSTALL_EXIT=0
 else
     INSTALL_EXIT=$?

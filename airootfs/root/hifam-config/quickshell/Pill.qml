@@ -3,6 +3,7 @@ import QtQuick
 Rectangle {
     id: root
     signal clicked()
+    signal rightClicked()
     property string icon: ""
     property color iconColor: "red"
     property string text: ""
@@ -49,8 +50,10 @@ Rectangle {
     }
     MouseArea {
         anchors.fill: parent
-        onClicked: {
-            root.clicked()
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onClicked: (mouse) => {
+            if (mouse.button === Qt.RightButton) root.rightClicked()
+            else root.clicked()
         }
     }
 }

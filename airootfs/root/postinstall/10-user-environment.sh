@@ -6,9 +6,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
 ensure_target_user
 
+install -d -m 0755 \
+    "$USER_HOME/.config" \
+    "$USER_HOME/.cache" \
+    "$USER_HOME/.local/share" \
+    "$USER_HOME/.local/state" \
+    "$USER_HOME/.local/share/fonts"
 mkdir -p "$USER_HOME/.config/tmux"
 
-for config_name in nvim kitty hypr waybar wl-kbptr mouseless quickshell; do
+for config_name in nvim kitty hypr waybar wl-kbptr mouseless quickshell fontconfig; do
     if [ -d "$CONFIG_DIR/$config_name" ]; then
         backup_user_config_dir "$config_name"
         ln -sfn "$CONFIG_DIR/$config_name" "$USER_HOME/.config/$config_name"
@@ -40,3 +46,12 @@ for home_file in "$USER_HOME/.zshrc" "$USER_HOME/.p10k.zsh" "$USER_HOME/.zsh_his
         chown "$USERNAME:$USERNAME" "$home_file"
     fi
 done
+
+chown -R "$USERNAME:$USERNAME" \
+    "$USER_HOME/.config" \
+    "$USER_HOME/.cache" \
+    "$USER_HOME/.local"
+
+if command -v fc-cache >/dev/null 2>&1; then
+    run_as_user fc-cache -f "$USER_HOME/.local/share/fonts"
+fi

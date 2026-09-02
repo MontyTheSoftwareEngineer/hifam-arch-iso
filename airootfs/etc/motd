@@ -9,8 +9,8 @@ This ISO includes your custom configurations and dotfiles.
 
 Installation steps:
   1. Connect to Wi-Fi (if needed): iwctl
-  2. Run the full installer: ./install-hifam.sh
-     (Or use ./arch-install.sh then ./post-install.sh)
+  2. The full installer starts automatically on TTY1
+     (Manual fallback: ./install-hifam.sh)
   3. Reboot: umount -R /mnt && reboot
 
 Your configs will be in /usr/share/hifam after installation.

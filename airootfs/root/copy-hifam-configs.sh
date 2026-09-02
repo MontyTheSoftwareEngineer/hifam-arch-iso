@@ -61,6 +61,7 @@ CONTENTS:
 • nvim/                - Neovim configuration
 • kitty/               - Kitty terminal configuration
 • hypr/                - Hyprland configuration
+• fontconfig/          - Font aliases and defaults
 • keyd/                - Keyboard remapping
 • tmux/                - Tmux configuration
 • mouseless/           - Mouseless configuration
@@ -88,6 +89,7 @@ MANUAL SETUP:
    ln -sf /usr/share/hifam/nvim ~/.config/nvim
    ln -sf /usr/share/hifam/kitty ~/.config/kitty
    ln -sf /usr/share/hifam/hypr ~/.config/hypr
+   ln -sf /usr/share/hifam/fontconfig ~/.config/fontconfig
    cp /usr/share/hifam/tmux/tmux.conf ~/.config/tmux/tmux.conf
 
 3. Copy shell configs:

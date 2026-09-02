@@ -91,6 +91,16 @@ echo "╔═══════════════════════�
 echo "║  ✅ Installation Complete!             ║"
 echo "╚════════════════════════════════════════╝"
 echo ""
+
+read -rp "Reboot now? [y/N]: " REBOOT_CONFIRM
+
+if [[ "$REBOOT_CONFIRM" =~ ^[Yy]$ ]]; then
+    echo ""
+    echo "Unmounting $MOUNT_POINT and rebooting..."
+    umount -R "$MOUNT_POINT"
+    reboot
+fi
+
 echo "Next steps:"
 echo "  1. umount -R $MOUNT_POINT"
 echo "  2. reboot"

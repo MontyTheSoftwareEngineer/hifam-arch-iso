@@ -1,6 +1,7 @@
 #!/bin/bash
 
 CONFIG_DIR="${HIFAM_CONFIG_DIR:-/usr/share/hifam}"
+DEFAULT_XDG_DATA_DIRS="/usr/local/share:/usr/share:/var/lib/flatpak/exports/share"
 
 ensure_target_user() {
     if [ -n "${USERNAME:-}" ] && [ -n "${USER_HOME:-}" ]; then
@@ -42,10 +43,19 @@ ensure_target_user() {
 
 run_as_user() {
     ensure_target_user
-    runuser -u "$USERNAME" -- env \
+    runuser -u "$USERNAME" -- env -i \
         HOME="$USER_HOME" \
         USER="$USERNAME" \
         LOGNAME="$USERNAME" \
+        SHELL="${SHELL:-/bin/bash}" \
+        PATH="/usr/local/sbin:/usr/local/bin:/usr/bin" \
+        LANG="${LANG:-en_US.UTF-8}" \
+        TERM="${TERM:-xterm-256color}" \
+        XDG_CONFIG_HOME="$USER_HOME/.config" \
+        XDG_CACHE_HOME="$USER_HOME/.cache" \
+        XDG_DATA_HOME="$USER_HOME/.local/share" \
+        XDG_STATE_HOME="$USER_HOME/.local/state" \
+        XDG_DATA_DIRS="${XDG_DATA_DIRS:-$DEFAULT_XDG_DATA_DIRS}" \
         "$@"
 }
 

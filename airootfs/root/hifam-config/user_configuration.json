@@ -11,6 +11,8 @@
         },
         "fonts_config": {
             "fonts": [
+                "ttf-jetbrains-mono-nerd",
+                "ttf-material-symbols-variable",
                 "noto-fonts",
                 "noto-fonts-emoji",
                 "noto-fonts-cjk",
@@ -82,6 +84,7 @@
         "nvim",
         "nvm",
         "tmux",
+        "ttf-jetbrains-mono-nerd",
         "quickshell",
         "ripgrep",
         "slurp",

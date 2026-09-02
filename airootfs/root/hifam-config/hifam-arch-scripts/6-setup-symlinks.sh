@@ -27,6 +27,14 @@ if [ -d "$HOME/.config/kitty" ] && [ ! -L "$HOME/.config/kitty" ]; then
 fi
 ln -sf "$CONFIG_DIR/kitty" "$HOME/.config/kitty"
 
+echo "Fontconfig..."
+if [ -d "$HOME/.config/fontconfig" ] && [ ! -L "$HOME/.config/fontconfig" ]; then
+    mv "$HOME/.config/fontconfig" "$HOME/.config/fontconfig.bak"
+fi
+if [ -d "$CONFIG_DIR/fontconfig" ]; then
+    ln -sf "$CONFIG_DIR/fontconfig" "$HOME/.config/fontconfig"
+fi
+
 echo "Tmux..."
 mkdir -p "$HOME/.config/tmux"
 cp "$CONFIG_DIR/tmux.conf" "$HOME/.config/tmux/"
@@ -46,6 +54,10 @@ if [ -d "$CONFIG_DIR/waybar" ]; then
         mv "$HOME/.config/waybar" "$HOME/.config/waybar.bak"
     fi
     ln -sf "$CONFIG_DIR/waybar" "$HOME/.config/waybar"
+fi
+
+if command -v fc-cache >/dev/null 2>&1; then
+    fc-cache -f
 fi
 
 echo "Symlinks complete!"

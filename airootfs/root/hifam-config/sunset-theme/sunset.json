@@ -247,7 +247,7 @@
         }
       },
       "default_timeout": 5000,
-      "font": "Liberation Sans 11",
+      "font": "JetBrainsMono Nerd Font 11",
       "height": 110,
       "max_icon_size": 32,
       "outer_margin": 20,

@@ -11,6 +11,8 @@
         },
         "fonts_config": {
             "fonts": [
+                "ttf-jetbrains-mono-nerd",
+                "ttf-material-symbols-variable",
                 "noto-fonts",
                 "noto-fonts-emoji",
                 "noto-fonts-cjk",
@@ -52,7 +54,9 @@
         "type": "nm"
     },
     "ntp": true,
-    "packages": [],
+    "packages": [
+        "ttf-jetbrains-mono-nerd"
+    ],
     "pacman_config": {
         "color": true,
         "parallel_downloads": 5
