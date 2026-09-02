@@ -5,6 +5,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INSTALL_START_FILE="/tmp/hifam-install-start-epoch"
+WIFI_STAGING_FILE="/tmp/hifam-install-wifi.env"
 
 echo "╔════════════════════════════════════════╗"
 echo "║   HiFam Arch Linux Installation        ║"
@@ -17,6 +18,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 date +%s > "$INSTALL_START_FILE"
+rm -f "$WIFI_STAGING_FILE"
 
 echo "Installation plan:"
 echo "1. Optionally connect Wi-Fi for networked post-install steps"

@@ -61,6 +61,7 @@ CONTENTS:
 • nvim/                - Neovim configuration
 • kitty/               - Kitty terminal configuration
 • hypr/                - Hyprland configuration
+• fastfetch/           - Fastfetch configuration and custom logo
 • fontconfig/          - Font aliases and defaults
 • keyd/                - Keyboard remapping
 • tmux/                - Tmux configuration
@@ -89,6 +90,7 @@ MANUAL SETUP:
    ln -sf /usr/share/hifam/nvim ~/.config/nvim
    ln -sf /usr/share/hifam/kitty ~/.config/kitty
    ln -sf /usr/share/hifam/hypr ~/.config/hypr
+   ln -sf /usr/share/hifam/fastfetch ~/.config/fastfetch
    ln -sf /usr/share/hifam/fontconfig ~/.config/fontconfig
    cp /usr/share/hifam/tmux/tmux.conf ~/.config/tmux/tmux.conf
 

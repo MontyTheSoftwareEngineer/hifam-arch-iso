@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+WIFI_STAGING_FILE="/tmp/hifam-install-wifi.env"
+
 have_internet() {
     curl -fsI --connect-timeout 5 https://archlinux.org >/dev/null 2>&1
 }
@@ -27,6 +29,21 @@ connect_secure_network() {
     local passphrase="$3"
 
     iwctl --passphrase "$passphrase" station "$iface" connect "$ssid"
+}
+
+stage_wifi_for_install() {
+    local ssid="$1"
+    local open_network="$2"
+    local passphrase="${3:-}"
+
+    umask 077
+    {
+        printf 'WIFI_SSID=%q\n' "$ssid"
+        printf 'WIFI_OPEN=%q\n' "$open_network"
+        if [ "$open_network" = "0" ]; then
+            printf 'WIFI_PASSPHRASE=%q\n' "$passphrase"
+        fi
+    } > "$WIFI_STAGING_FILE"
 }
 
 echo "╔════════════════════════════════════════╗"
@@ -99,6 +116,7 @@ read -rp "Is the network open (no password)? [y/N]: " OPEN_REPLY
 
 if [[ "$OPEN_REPLY" =~ ^[Yy]$ ]]; then
     connect_open_network "$WIFI_INTERFACE" "$WIFI_SSID"
+    WIFI_OPEN="1"
 else
     read -rsp "Wi-Fi passphrase: " WIFI_PASSPHRASE
     echo
@@ -107,7 +125,7 @@ else
         exit 1
     fi
     connect_secure_network "$WIFI_INTERFACE" "$WIFI_SSID" "$WIFI_PASSPHRASE"
-    unset WIFI_PASSPHRASE
+    WIFI_OPEN="0"
 fi
 
 echo ""
@@ -115,6 +133,14 @@ echo "Waiting for connectivity..."
 for _ in $(seq 1 10); do
     if have_internet; then
         echo "✓ Wi-Fi connected."
+        read -rp "Copy this Wi-Fi connection into the installed system? [y/N]: " PERSIST_REPLY
+        if [[ "$PERSIST_REPLY" =~ ^[Yy]$ ]]; then
+            stage_wifi_for_install "$WIFI_SSID" "$WIFI_OPEN" "${WIFI_PASSPHRASE:-}"
+            echo "Wi-Fi credentials staged for installation."
+        else
+            rm -f "$WIFI_STAGING_FILE"
+        fi
+        unset WIFI_PASSPHRASE
         exit 0
     fi
     sleep 2

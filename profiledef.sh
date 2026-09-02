@@ -28,6 +28,7 @@ file_permissions=(
   ["/root/postinstall/common.sh"]="0:0:755"
   ["/root/postinstall/run.sh"]="0:0:755"
   ["/root/postinstall/10-user-environment.sh"]="0:0:755"
+  ["/root/postinstall/15-wifi-network.sh"]="0:0:755"
   ["/root/postinstall/20-sudo-yay.sh"]="0:0:755"
   ["/root/postinstall/30-mouseless.sh"]="0:0:755"
   ["/root/postinstall/40-wl-kbptr.sh"]="0:0:755"

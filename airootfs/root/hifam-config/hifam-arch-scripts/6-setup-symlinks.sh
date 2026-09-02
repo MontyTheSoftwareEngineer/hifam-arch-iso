@@ -47,6 +47,14 @@ if [ -d "$CONFIG_DIR/hypr" ]; then
     ln -sf "$CONFIG_DIR/hypr" "$HOME/.config/hypr"
 fi
 
+echo "Fastfetch..."
+if [ -d "$HOME/.config/fastfetch" ] && [ ! -L "$HOME/.config/fastfetch" ]; then
+    mv "$HOME/.config/fastfetch" "$HOME/.config/fastfetch.bak"
+fi
+if [ -d "$CONFIG_DIR/fastfetch" ]; then
+    ln -sf "$CONFIG_DIR/fastfetch" "$HOME/.config/fastfetch"
+fi
+
 # Waybar if it exists
 if [ -d "$CONFIG_DIR/waybar" ]; then
     echo "Waybar..."

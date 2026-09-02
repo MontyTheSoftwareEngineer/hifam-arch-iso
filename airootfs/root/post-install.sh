@@ -5,6 +5,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INSTALL_START_FILE="/tmp/hifam-install-start-epoch"
+WIFI_STAGING_FILE="/tmp/hifam-install-wifi.env"
 
 format_duration() {
     local total_seconds="$1"
@@ -118,6 +119,11 @@ fi
 
 echo ""
 echo "Using installation at: $MOUNT_POINT"
+
+if [ -f "$WIFI_STAGING_FILE" ]; then
+    echo "Staging Wi-Fi credentials for the installed system..."
+    install -D -m 0600 "$WIFI_STAGING_FILE" "$MOUNT_POINT/root/hifam-install-wifi.env"
+fi
 
 "$SCRIPT_DIR/copy-hifam-configs.sh" "$MOUNT_POINT"
 
