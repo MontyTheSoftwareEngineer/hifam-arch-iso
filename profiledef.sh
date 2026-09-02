@@ -22,6 +22,7 @@ file_permissions=(
   ["/root/arch-install.sh"]="0:0:755"
   ["/root/install-hifam.sh"]="0:0:755"
   ["/root/post-install.sh"]="0:0:755"
+  ["/root/wifi-connect.sh"]="0:0:755"
   ["/root/copy-hifam-configs.sh"]="0:0:755"
   ["/root/postinstall"]="0:0:755"
   ["/root/postinstall/common.sh"]="0:0:755"

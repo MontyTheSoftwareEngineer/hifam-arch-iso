@@ -4,6 +4,45 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+INSTALL_START_FILE="/tmp/hifam-install-start-epoch"
+
+format_duration() {
+    local total_seconds="$1"
+    local hours minutes seconds
+
+    hours=$((total_seconds / 3600))
+    minutes=$(((total_seconds % 3600) / 60))
+    seconds=$((total_seconds % 60))
+
+    if [ "$hours" -gt 0 ]; then
+        printf '%dh %dm %ds' "$hours" "$minutes" "$seconds"
+    elif [ "$minutes" -gt 0 ]; then
+        printf '%dm %ds' "$minutes" "$seconds"
+    else
+        printf '%ds' "$seconds"
+    fi
+}
+
+show_install_duration() {
+    local start_epoch end_epoch elapsed
+
+    if [ ! -f "$INSTALL_START_FILE" ]; then
+        return 0
+    fi
+
+    start_epoch="$(cat "$INSTALL_START_FILE" 2>/dev/null || true)"
+    if [[ ! "$start_epoch" =~ ^[0-9]+$ ]]; then
+        return 0
+    fi
+
+    end_epoch="$(date +%s)"
+    if [ "$end_epoch" -lt "$start_epoch" ]; then
+        return 0
+    fi
+
+    elapsed=$((end_epoch - start_epoch))
+    echo "Total installation time: $(format_duration "$elapsed")"
+}
 
 find_mount_point() {
     local candidate
@@ -90,6 +129,8 @@ echo ""
 echo "╔════════════════════════════════════════╗"
 echo "║  ✅ Installation Complete!             ║"
 echo "╚════════════════════════════════════════╝"
+echo ""
+show_install_duration
 echo ""
 
 read -rp "Reboot now? [y/N]: " REBOOT_CONFIRM

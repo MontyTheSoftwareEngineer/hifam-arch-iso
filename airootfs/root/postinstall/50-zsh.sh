@@ -6,13 +6,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
 ensure_target_user
 
-pacman -S --needed --noconfirm zsh curl git
+pacman -S --needed --noconfirm zsh git
 
 if [ ! -d "$USER_HOME/.oh-my-zsh" ]; then
-    run_as_user zsh -c '
-        RUNZSH=no CHSH=no \
-        sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-    '
+    run_as_user git clone --depth=1 \
+        https://github.com/ohmyzsh/ohmyzsh.git \
+        "$USER_HOME/.oh-my-zsh"
 fi
 
 if [ ! -d "$USER_HOME/.oh-my-zsh/custom/themes/powerlevel10k" ]; then

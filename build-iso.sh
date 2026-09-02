@@ -1,11 +1,21 @@
 #!/bin/bash
 # Build script for HiFam Arch ISO
 
-set -e
+set -euo pipefail
 
-ISO_PROFILE="$HOME/hifam-arch"
-OUTPUT_DIR="$HOME/hifam-arch-iso-output"
-WORK_DIR="$HOME/hifam-arch-work"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ISO_PROFILE="${ISO_PROFILE:-$SCRIPT_DIR}"
+OUTPUT_DIR="${OUTPUT_DIR:-$HOME/hifam-arch-iso-output}"
+WORK_DIR="${WORK_DIR:-$HOME/hifam-arch-work}"
+MKARCHISO_WORK_DIR="$WORK_DIR/mkarchiso"
+
+run_root() {
+    if [ "$EUID" -eq 0 ]; then
+        "$@"
+    else
+        sudo "$@"
+    fi
+}
 
 echo "╔════════════════════════════════════════╗"
 echo "║  HiFam Arch ISO Build Script           ║"
@@ -37,8 +47,10 @@ echo "Verifying profile structure..."
 REQUIRED_FILES=(
     "$ISO_PROFILE/profiledef.sh"
     "$ISO_PROFILE/packages.x86_64"
+    "$ISO_PROFILE/airootfs/root/arch-install.sh"
     "$ISO_PROFILE/airootfs/root/install-hifam.sh"
     "$ISO_PROFILE/airootfs/root/post-install.sh"
+    "$ISO_PROFILE/airootfs/root/copy-hifam-configs.sh"
     "$ISO_PROFILE/airootfs/root/hifam-config/user_configuration.json"
 )
 
@@ -68,6 +80,8 @@ fi
 
 # Create output directory
 mkdir -p "$OUTPUT_DIR"
+run_root rm -rf "$MKARCHISO_WORK_DIR"
+mkdir -p "$WORK_DIR"
 
 # Build the ISO
 echo ""
@@ -75,11 +89,7 @@ echo "=== Building ISO ==="
 echo "This may take several minutes..."
 echo ""
 
-if [ "$EUID" -eq 0 ]; then
-    mkarchiso -v -w "$WORK_DIR" -o "$OUTPUT_DIR" "$ISO_PROFILE"
-else
-    sudo mkarchiso -v -w "$WORK_DIR" -o "$OUTPUT_DIR" "$ISO_PROFILE"
-fi
+run_root mkarchiso -v -w "$MKARCHISO_WORK_DIR" -o "$OUTPUT_DIR" "$ISO_PROFILE"
 
 BUILD_EXIT=$?
 
