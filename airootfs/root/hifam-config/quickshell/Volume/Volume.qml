@@ -6,6 +6,10 @@ import "../" as Root
 Root.Pill {
     id: root
 
+    // Shared VolumeModel instance, owned by the caller (shell.qml) so the
+    // OSD popup and this bar pill stay in sync.
+    required property var model
+
     readonly property string iconName: {
         if (model.muted) return "volume_off"
         if (model.volume === 0) return "volume_mute"
@@ -19,13 +23,9 @@ Root.Pill {
 
     onClicked: popup.toggle()
 
-    VolumeModel {
-        id: model
-    }
-
     VolumePopup {
         id: popup
         target: root
-        model: model
+        model: root.model
     }
 }

@@ -57,12 +57,7 @@ hl.bind("SUPER + CTRL" .. " + " .. "K", hl.dsp.focus({ direction = "up" }))
 
 -- Lid switch bindings - handle suspend on close (unless external monitor) and wake on open
 
--- hl.unbind("switch:on:Lid Switch")
--- hl.bind("switch:on:Lid Switch", hl.dsp.exec_cmd("qs ipc call lockscreen lock"), { locked = true })
-hl.bind("switch:off:Lid Switch", hl.dsp.exec_cmd("qs ipc call lockscreen lock"), { locked = true })
---
--- hl.unbind("switch:off:Lid Switch")
--- hl.bind("switch:off:Lid Switch", hl.dsp.exec_cmd("~/.config/hypr/lid-open-handler.sh"), { locked = true })
+hl.bind("switch:on:Lid Switch", hl.dsp.exec_cmd("~/.config/hypr/lid-close-lock-suspend.sh"), { locked = true })
 
 -- Switch workspaces with mainMod + [0-9]
 -- Move active window to a workspace with mainMod + SHIFT + [0-9]
@@ -77,9 +72,9 @@ hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
 -- Laptop multimedia keys for volume and LCD brightness
-hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
-hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),      { locked = true, repeating = true })
-hl.bind("XF86AudioMute",        hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),     { locked = true, repeating = true })
+hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("qs ipc call volume up"),   { locked = true, repeating = true })
+hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("qs ipc call volume down"), { locked = true, repeating = true })
+hl.bind("XF86AudioMute",        hl.dsp.exec_cmd("qs ipc call volume mute"), { locked = true, repeating = true })
 hl.bind("XF86AudioMicMute",     hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),   { locked = true, repeating = true })
 hl.bind("XF86MonBrightnessUp",  hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"),                  { locked = true, repeating = true })
 hl.bind("XF86MonBrightnessDown",hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"),                  { locked = true, repeating = true })

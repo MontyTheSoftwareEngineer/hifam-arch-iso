@@ -76,8 +76,25 @@ EOFEDITOR
     ln -sfn /usr/bin/nvim /usr/local/bin/editor
 }
 
+install_lid_switch_config() {
+    # Let Hyprland's own lid-switch binding (lock, then suspend) handle the
+    # lid switch. If logind also acts on it, it can suspend before the lock
+    # screen finishes rendering, so the desktop briefly flashes on wake.
+    install -d /etc/systemd/logind.conf.d
+
+    cat > /etc/systemd/logind.conf.d/hifam-lid-switch.conf <<'EOFLID'
+[Login]
+HandleLidSwitch=ignore
+HandleLidSwitchExternalPower=ignore
+HandleLidSwitchDocked=ignore
+EOFLID
+
+    chmod 0644 /etc/systemd/logind.conf.d/hifam-lid-switch.conf
+}
+
 install_os_release_branding
 install_default_editor_config
+install_lid_switch_config
 
 if [ -f "$CONFIG_DIR/keyd/default.conf" ]; then
     install -d /etc/keyd

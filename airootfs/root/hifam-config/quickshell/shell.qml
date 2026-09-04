@@ -21,6 +21,15 @@ ShellRoot {
 
     PowerMenu {}
 
+    // Shared so the bar pill and the OSD popup always agree on state.
+    VolumeModel {
+        id: volumeModel
+    }
+
+    VolumeOSD {
+        model: volumeModel
+    }
+
     IdleService {
         screenOffMinutes: shell.idleScreenOffMinutes
         lockMinutes: shell.idleLockMinutes
@@ -76,7 +85,7 @@ ShellRoot {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: Theme.spacing
 
-                Volume { id: volumeWidget }
+                Volume { id: volumeWidget; model: volumeModel }
 
                 Battery { id: batteryWidget }
 

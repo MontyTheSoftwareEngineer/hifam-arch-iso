@@ -13,6 +13,10 @@ Item {
     property var sinks: []          // [{name, description, active}]
 
     signal refreshed()
+    // Emitted only for explicit user-driven changes (keybinds, slider,
+    // mute toggle) -- distinct from refreshed() which also fires on every
+    // background poll. Used to trigger the on-screen volume popup.
+    signal changed()
 
     function refresh() {
         statusProcess.running = true
@@ -21,11 +25,17 @@ Item {
     function setVolume(percent) {
         root.volume = Math.max(0, Math.min(100, Math.round(percent)))
         wpctl.setVolume(root.volume)
+        root.changed()
+    }
+
+    function adjustVolume(step) {
+        root.setVolume(root.volume + step)
     }
 
     function toggleMute() {
         root.muted = !root.muted
         wpctl.toggleMute()
+        root.changed()
     }
 
     function setDefaultSink(name) {
