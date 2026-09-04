@@ -63,7 +63,21 @@ EOFHOOK
     /usr/local/lib/hifam/refresh-os-release-branding
 }
 
+install_default_editor_config() {
+    install -d /etc/profile.d /usr/local/bin
+
+    cat > /etc/profile.d/hifam-editor.sh <<'EOFEDITOR'
+export EDITOR="nvim"
+export VISUAL="nvim"
+export SUDO_EDITOR="nvim"
+EOFEDITOR
+
+    chmod 0644 /etc/profile.d/hifam-editor.sh
+    ln -sfn /usr/bin/nvim /usr/local/bin/editor
+}
+
 install_os_release_branding
+install_default_editor_config
 
 if [ -f "$CONFIG_DIR/keyd/default.conf" ]; then
     install -d /etc/keyd

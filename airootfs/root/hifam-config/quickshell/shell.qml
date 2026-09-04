@@ -15,6 +15,8 @@ ShellRoot {
             implicitHeight: 38
             color: Qt.rgba(0,0,0,0)
 
+            LockScreen {}
+
             Workspaces {
                 id: ws
                 anchors.left: parent.left
