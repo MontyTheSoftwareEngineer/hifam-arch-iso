@@ -1,0 +1,6 @@
+[SddmGreeterTheme]
+Name=HiFam
+Description=Minimal terminal-style login theme matching the Limine bootloader aesthetic
+Author=HiFam
+Type=sddm-theme
+Version=1.0

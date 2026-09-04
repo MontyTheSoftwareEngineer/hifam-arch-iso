@@ -120,3 +120,15 @@ if [ -d /usr/share/plymouth/themes/hifam ] && command -v plymouth-set-default-th
     plymouth-set-default-theme hifam
     mkinitcpio -P
 fi
+
+if [ -d "$CONFIG_DIR/sddm/hifam" ]; then
+    install -d /usr/share/sddm/themes
+    rm -rf /usr/share/sddm/themes/hifam
+    cp -a "$CONFIG_DIR/sddm/hifam" /usr/share/sddm/themes/hifam
+
+    install -d /etc/sddm.conf.d
+    cat > /etc/sddm.conf.d/theme.conf <<'EOFSDDM'
+[Theme]
+Current=hifam
+EOFSDDM
+fi
