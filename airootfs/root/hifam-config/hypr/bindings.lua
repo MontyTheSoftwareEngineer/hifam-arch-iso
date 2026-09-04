@@ -12,7 +12,10 @@ local screenrecord  = "/usr/share/hifam/scripts/screenrecord.sh"
 
 -- Application bindings
 hl.bind("SUPER + Q", hl.dsp.window.close())
-hl.bind(mainMod .. " + RETURN", hl.dsp.exec_cmd(terminal))
+-- hl.bind(mainMod .. " + RETURN", hl.dsp.exec_cmd(terminal))
+hl.bind("SUPER + RETURN", hl.dsp.exec_cmd("kitty -e tmux new"))
+
+hl.bind("CTRL + ALT + P", hl.dsp.exec_cmd("qs ipc call power toggle"))
 
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(menu))
@@ -55,7 +58,8 @@ hl.bind("SUPER + CTRL" .. " + " .. "K", hl.dsp.focus({ direction = "up" }))
 -- Lid switch bindings - handle suspend on close (unless external monitor) and wake on open
 
 -- hl.unbind("switch:on:Lid Switch")
-hl.bind("switch:on:Lid Switch", hl.dsp.exec_cmd("qs ipc call lockscreen lock"), { locked = true })
+-- hl.bind("switch:on:Lid Switch", hl.dsp.exec_cmd("qs ipc call lockscreen lock"), { locked = true })
+hl.bind("switch:off:Lid Switch", hl.dsp.exec_cmd("qs ipc call lockscreen lock"), { locked = true })
 --
 -- hl.unbind("switch:off:Lid Switch")
 -- hl.bind("switch:off:Lid Switch", hl.dsp.exec_cmd("~/.config/hypr/lid-open-handler.sh"), { locked = true })

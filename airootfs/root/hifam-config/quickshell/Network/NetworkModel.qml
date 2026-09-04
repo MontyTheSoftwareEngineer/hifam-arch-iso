@@ -19,6 +19,7 @@ Item {
     property string activeIp: ""
     property var networks: []          // [{ssid, signal, security, active, known}]
     property bool scanning: false
+    property string connectingSsid: ""
 
     readonly property bool connected: activeType !== ""
 
@@ -39,6 +40,7 @@ Item {
     }
 
     function connectTo(ssid, password) {
+        root.connectingSsid = ssid
         nmcli.connect(ssid, password)
     }
 
@@ -53,6 +55,7 @@ Item {
         }
         onRadioToggled: root.refresh()
         onConnectFinished: (success, ssid, message) => {
+            root.connectingSsid = ""
             if (!success) root.connectFailed(ssid, message)
             root.refresh()
         }

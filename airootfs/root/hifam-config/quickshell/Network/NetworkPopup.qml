@@ -26,6 +26,13 @@ PopupWindow {
     visible: false
     grabFocus: true
 
+    // Height of one network row and how many are shown before the list
+    // becomes scrollable, so a long AP list can't push the popup past the
+    // bottom of the screen.
+    readonly property int rowHeight: Root.Theme.moduleHeight + 6
+    readonly property int maxVisibleRows: 6
+    readonly property real maxListHeight: Math.min(rowHeight * maxVisibleRows, (root.screen ? root.screen.height : 800) * 0.45)
+
     implicitWidth: 260
     implicitHeight: showPassword ? 168 : listPage.implicitHeight
 
@@ -48,6 +55,7 @@ PopupWindow {
 
     function selectNetwork(network) {
         if (network.active) return
+        if (model.connectingSsid !== "") return
         if (network.security !== "" && !network.known) {
             pendingSsid = network.ssid
             passwordText = ""
@@ -59,6 +67,7 @@ PopupWindow {
 
     function submitPassword() {
         if (passwordText.length === 0) return
+        if (model.connectingSsid !== "") return
         errorText = ""
         model.connectTo(pendingSsid, passwordText)
     }
@@ -139,20 +148,29 @@ PopupWindow {
 
             Rectangle { id: divider1; width: parent.width; height: 1; color: Root.Theme.primaryColor }
 
-            Column {
-                id: networkColumn
+            Item {
+                id: networkListContainer
                 width: parent.width
-                visible: root.model && root.model.wifiEnabled
+                visible: root.model && root.model.wifiEnabled && root.model.networks.length > 0
+                height: visible ? Math.min(networkListView.contentHeight, root.maxListHeight) : 0
+                clip: true
 
-                Repeater {
+                ListView {
+                    id: networkListView
+                    anchors.fill: parent
+                    clip: true
+                    interactive: contentHeight > height
+                    boundsBehavior: Flickable.StopAtBounds
                     model: root.model ? root.model.networks : []
                     delegate: Row {
                         required property var modelData
-                        width: networkColumn.width
-                        height: Root.Theme.moduleHeight + 6
+                        width: networkListView.width
+                        height: root.rowHeight
                         leftPadding: Root.Theme.spacing
                         rightPadding: Root.Theme.spacing
                         spacing: Root.Theme.spacing
+
+                        readonly property bool connecting: root.model && root.model.connectingSsid === modelData.ssid
 
                         Text {
                             height: parent.height
@@ -165,7 +183,7 @@ PopupWindow {
                         Text {
                             height: parent.height
                             verticalAlignment: Text.AlignVCenter
-                            width: networkColumn.width - 90
+                            width: networkListView.width - 90
                             text: modelData.ssid
                             elide: Text.ElideRight
                             color: Root.Theme.textColor
@@ -175,29 +193,30 @@ PopupWindow {
                         Text {
                             height: parent.height
                             verticalAlignment: Text.AlignVCenter
-                            text: modelData.signal + "%"
-                            color: Root.Theme.textColor
+                            text: connecting ? "Connecting…" : modelData.signal + "%"
+                            color: connecting ? Root.Theme.secondaryColor : Root.Theme.textColor
                             font.family: Root.Theme.font
                             font.pixelSize: Root.Theme.fontSize
                         }
                         MouseArea {
                             width: parent.width
                             height: parent.height
+                            enabled: !connecting
                             onClicked: root.selectNetwork(modelData)
                         }
                     }
                 }
+            }
 
-                Text {
-                    visible: root.model && root.model.networks.length === 0
-                    leftPadding: Root.Theme.spacing
-                    height: Root.Theme.moduleHeight
-                    verticalAlignment: Text.AlignVCenter
-                    text: root.model && root.model.scanning ? "Scanning…" : "No networks found"
-                    color: Root.Theme.textColor
-                    font.family: Root.Theme.font
-                    font.pixelSize: Root.Theme.fontSize
-                }
+            Text {
+                visible: root.model && root.model.wifiEnabled && root.model.networks.length === 0
+                leftPadding: Root.Theme.spacing
+                height: Root.Theme.moduleHeight
+                verticalAlignment: Text.AlignVCenter
+                text: root.model && root.model.scanning ? "Scanning…" : "No networks found"
+                color: Root.Theme.textColor
+                font.family: Root.Theme.font
+                font.pixelSize: Root.Theme.fontSize
             }
 
             Rectangle { id: divider2; width: parent.width; height: 1; color: Root.Theme.primaryColor }
@@ -331,16 +350,19 @@ PopupWindow {
                 height: Root.Theme.moduleHeight
                 radius: Root.Theme.radius
                 color: Root.Theme.secondaryColor
+                opacity: connecting ? 0.6 : 1
+
+                readonly property bool connecting: root.model && root.model.connectingSsid === root.pendingSsid
 
                 Text {
                     anchors.centerIn: parent
-                    text: "Connect"
+                    text: parent.connecting ? "Connecting…" : "Connect"
                     color: Root.Theme.highlightedTextColor
                     font.family: Root.Theme.font
                     font.pixelSize: Root.Theme.fontSize
                     font.weight: 600
                 }
-                MouseArea { anchors.fill: parent; onClicked: root.submitPassword() }
+                MouseArea { anchors.fill: parent; enabled: !parent.connecting; onClicked: root.submitPassword() }
             }
         }
     }

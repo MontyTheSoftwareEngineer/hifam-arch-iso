@@ -19,6 +19,8 @@ ShellRoot {
 
     AppLauncher {}
 
+    PowerMenu {}
+
     IdleService {
         screenOffMinutes: shell.idleScreenOffMinutes
         lockMinutes: shell.idleLockMinutes
