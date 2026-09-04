@@ -5,10 +5,14 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Effects // Built-in Qt 6 replacement for FastBlur
 
-import "../state"
-
 WlSessionLock {
     id: lock
+    property string wallpaperPath: "/usr/share/hifam/images/back.png"
+
+    function imageUrl(path) {
+        if (!path) return ""
+        return "file://" + String(path).split("/").map(encodeURIComponent).join("/")
+    }
 
     locked: LockScreenState.locked
     onLockedChanged: {
@@ -38,7 +42,7 @@ WlSessionLock {
             Image {
                 id: wallpaper
                 anchors.fill: parent
-                source: "file:///usr/share/hifam/images/back.png"
+                source: lock.imageUrl(lock.wallpaperPath)
                 fillMode: Image.PreserveAspectCrop
                 smooth: true
                 asynchronous: false
@@ -152,8 +156,8 @@ WlSessionLock {
                         color: Qt.rgba(0, 0, 0, 0.5)
                         border.width: pwField.activeFocus ? 2 : (LockScreenState.authFailed ? 2 : 1)
                         border.color: LockScreenState.authFailed 
-                            ? Colors.colRed 
-                            : (pwField.activeFocus ? Colors.colFg : Qt.rgba(1, 1, 1, 0.15))
+                            ? Color.lock.textError
+                            : (pwField.activeFocus ? Color.lock.text : Qt.rgba(1, 1, 1, 0.15))
 
                         Behavior on border.color { ColorAnimation { duration: 200 } }
                         Behavior on border.width { NumberAnimation { duration: 150 } }
@@ -194,7 +198,7 @@ WlSessionLock {
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "Incorrect password"
-                        color: Colors.colRed
+                        color: Color.lock.textError
                         font.pixelSize: 13
                         font.weight: Font.Medium
                         opacity: LockScreenState.authFailed ? 1 : 0

@@ -67,3 +67,21 @@ backup_user_config_dir() {
         mv "$path" "$path.bak"
     fi
 }
+
+yay_temp_sudoers_file() {
+    ensure_target_user
+    printf '/etc/sudoers.d/90-hifam-yay-%s\n' "$USERNAME"
+}
+
+install_temp_pacman_nopasswd() {
+    local sudoers_file
+
+    sudoers_file="$(yay_temp_sudoers_file)"
+    printf '%s ALL=(ALL:ALL) NOPASSWD: /usr/bin/pacman\n' "$USERNAME" > "$sudoers_file"
+    chmod 0440 "$sudoers_file"
+    visudo -cf "$sudoers_file"
+}
+
+remove_temp_pacman_nopasswd() {
+    rm -f "$(yay_temp_sudoers_file)"
+}

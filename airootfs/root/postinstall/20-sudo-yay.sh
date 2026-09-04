@@ -7,7 +7,4 @@ source "$SCRIPT_DIR/common.sh"
 ensure_target_user
 
 pacman -S --needed --noconfirm sudo base-devel git
-
-printf '%s ALL=(ALL:ALL) ALL\n' "$USERNAME" > "/etc/sudoers.d/$USERNAME"
-chmod 0440 "/etc/sudoers.d/$USERNAME"
-visudo -cf "/etc/sudoers.d/$USERNAME"
+install_temp_pacman_nopasswd

@@ -6,6 +6,22 @@ import "Volume"
 import "Battery"
 
 ShellRoot {
+    id: shell
+
+    // Change these three values to tune idle and wallpaper behavior.
+    property int idleScreenOffMinutes: 5
+    property int idleLockMinutes: 10
+    property string wallpaperPath: "/usr/share/hifam/images/back.png"
+
+    BackgroundLayer {
+        imagePath: shell.wallpaperPath
+    }
+
+    IdleService {
+        screenOffMinutes: shell.idleScreenOffMinutes
+        lockMinutes: shell.idleLockMinutes
+    }
+
     Variants {
         model: Quickshell.screens
         PanelWindow {
@@ -15,7 +31,9 @@ ShellRoot {
             implicitHeight: 38
             color: Qt.rgba(0,0,0,0)
 
-            LockScreen {}
+            LockScreen {
+                wallpaperPath: shell.wallpaperPath
+            }
 
             Workspaces {
                 id: ws
