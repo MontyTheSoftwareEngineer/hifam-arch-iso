@@ -1,0 +1,79 @@
+#!/bin/bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APP_ROOT="${NIMBLE_APP_ROOT:-}"
+APP_BUILD_DIR="${NIMBLE_APP_BUILD_DIR:-}"
+ELECTRON_APP_DIR=""
+
+find_app_root() {
+    local candidate
+
+    for candidate in \
+        "$SCRIPT_DIR/../nimble-mouse-training" \
+        "/usr/share/hifam/nimble-mouse-training" \
+        "/root/hifam-config/nimble-mouse-training"
+    do
+        if [ -d "$candidate" ]; then
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+find_electron() {
+    local candidate
+
+    for candidate in electron electron38 electron37 electron36 electron35 electron34; do
+        if command -v "$candidate" >/dev/null 2>&1; then
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+if [ -z "$APP_ROOT" ]; then
+    APP_ROOT="$(find_app_root || true)"
+fi
+
+if [ -z "$APP_ROOT" ]; then
+    echo "Nimble app directory not found." >&2
+    exit 1
+fi
+
+APP_ROOT="$(cd "$APP_ROOT" && pwd)"
+
+if [ -z "$APP_BUILD_DIR" ]; then
+    APP_BUILD_DIR="$APP_ROOT/app-build"
+fi
+
+if [ -d "$APP_BUILD_DIR" ]; then
+    APP_BUILD_DIR="$(cd "$APP_BUILD_DIR" && pwd)"
+fi
+
+ELECTRON_APP_DIR="$APP_ROOT/electron-app"
+
+if [ ! -f "$APP_BUILD_DIR/server/index.mjs" ]; then
+    echo "Nimble build not found. Expected $APP_BUILD_DIR/server/index.mjs." >&2
+    exit 1
+fi
+
+if [ ! -f "$ELECTRON_APP_DIR/main.mjs" ]; then
+    echo "Nimble Electron launcher not found. Expected $ELECTRON_APP_DIR/main.mjs." >&2
+    exit 1
+fi
+
+electron_bin="$(find_electron || true)"
+
+if [ -z "$electron_bin" ]; then
+    echo "Electron is not installed. Install the Arch 'electron' package." >&2
+    exit 1
+fi
+
+export NIMBLE_APP_BUILD_DIR="$APP_BUILD_DIR"
+exec "$electron_bin" "$ELECTRON_APP_DIR"

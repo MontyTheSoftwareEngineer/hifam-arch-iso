@@ -6,6 +6,7 @@ b43-fwcutter
 base
 bcachefs-tools
 curl
+electron
 bind
 bolt
 brltty

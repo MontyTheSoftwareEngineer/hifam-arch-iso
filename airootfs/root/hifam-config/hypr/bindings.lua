@@ -17,6 +17,10 @@ hl.bind(mainMod .. " + RETURN", hl.dsp.exec_cmd(terminal))
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(menu))
 
+
+hl.bind("SUPER + SHIFT" .. " + " .. "L", hl.dsp.exec_cmd("qs ipc call lockscreen lock"))
+hl.bind("SUPER" .. " + " .. "D", hl.dsp.exec_cmd("qs ipc call launcher toggle"))
+
 -- hl.bind("SUPER" .. " + " .. "RETURN", hl.dsp.exec_cmd("kitty -e tmux new"))
 -- hl.bind("SUPER + SHIFT" .. " + " .. "RETURN", hl.dsp.exec_cmd("kitty -e sh -c \"tmux attach || tmux new\""))
 
@@ -35,6 +39,7 @@ hl.bind("SUPER + ALT + Q", hl.dsp.exec_cmd("~/.config/hypr/restart-mouseless.sh"
 hl.bind("SUPER + J", hl.dsp.exec_cmd("~/.config/hypr/wl-kbptr-click.sh"))
 hl.bind("SUPER + I", hl.dsp.exec_cmd("~/.config/hypr/wl-kbptr-click.sh right"))
 hl.bind("SUPER + H", hl.dsp.exec_cmd("~/.config/hypr/wl-kbptr-click.sh move"))
+hl.bind("SUPER + N", hl.dsp.exec_cmd("/usr/share/hifam/scripts/nimble"))
 
 hl.bind("SUPER + SHIFT" .. " + " .. "F", hl.dsp.window.fullscreen())
 
@@ -50,7 +55,7 @@ hl.bind("SUPER + CTRL" .. " + " .. "K", hl.dsp.focus({ direction = "up" }))
 -- Lid switch bindings - handle suspend on close (unless external monitor) and wake on open
 
 -- hl.unbind("switch:on:Lid Switch")
--- hl.bind("switch:on:Lid Switch", hl.dsp.exec_cmd("~/.config/hypr/lid-close-handler.sh"), { locked = true })
+hl.bind("switch:on:Lid Switch", hl.dsp.exec_cmd("qs ipc call lockscreen lock"), { locked = true })
 --
 -- hl.unbind("switch:off:Lid Switch")
 -- hl.bind("switch:off:Lid Switch", hl.dsp.exec_cmd("~/.config/hypr/lid-open-handler.sh"), { locked = true })

@@ -32,6 +32,9 @@ echo "Copying HiFam configs to $MOUNT_POINT/usr/share/hifam..."
 install -d "$MOUNT_POINT/usr/share/hifam"
 cp -a "$CONFIG_DIR/." "$MOUNT_POINT/usr/share/hifam/"
 find "$MOUNT_POINT/usr/share/hifam" -type f -name '*.sh' -exec chmod 0755 {} +
+if [ -d "$MOUNT_POINT/usr/share/hifam/scripts" ]; then
+    find "$MOUNT_POINT/usr/share/hifam/scripts" -type f -exec chmod 0755 {} +
+fi
 
 echo "Copying post-install helper scripts to $MOUNT_POINT/root/hifam-postinstall..."
 install -d "$MOUNT_POINT/root/hifam-postinstall"
@@ -66,6 +69,7 @@ CONTENTS:
 • keyd/                - Keyboard remapping
 • tmux/                - Tmux configuration
 • mouseless/           - Mouseless configuration
+• nimble-mouse-training/ - Bundled Nimble desktop app
 • zshrc / p10k.zsh     - Shell configuration
 
 AUTOMATED SETUP:
@@ -103,6 +107,9 @@ MANUAL SETUP:
    ./2-install-packages.sh
    ./6-setup-symlinks.sh
    ./8-zsh-setup.sh
+
+5. Launch the bundled mouse trainer desktop app:
+   nimble
 
 For more info: https://github.com/MontyTheSoftwareEngineer/hifam-arch
 EOFREADME

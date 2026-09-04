@@ -2,7 +2,88 @@
 # Fix Post-Installation from Already-Installed System
 # Run this from your installed Arch system if post-install didn't run
 
-set -e
+set -euo pipefail
+
+TEMP_YAY_SUDOERS=""
+
+cleanup() {
+    if [ -n "$TEMP_YAY_SUDOERS" ] && [ -f "$TEMP_YAY_SUDOERS" ]; then
+        rm -f "$TEMP_YAY_SUDOERS"
+    fi
+}
+
+trap cleanup EXIT
+
+install_os_release_branding() {
+    install -d /usr/local/lib/hifam /etc/pacman.d/hooks
+
+    cat > /usr/local/lib/hifam/refresh-os-release-branding <<'EOFBRAND'
+#!/bin/bash
+
+set -euo pipefail
+
+OS_RELEASE_FILE="/etc/os-release"
+
+if [ -L "$OS_RELEASE_FILE" ]; then
+    resolved_file="$(readlink -f "$OS_RELEASE_FILE")"
+    if [ -n "$resolved_file" ] && [ -f "$resolved_file" ]; then
+        OS_RELEASE_FILE="$resolved_file"
+    fi
+fi
+
+if [ ! -f "$OS_RELEASE_FILE" ]; then
+    echo "ERROR: Could not find an os-release file to update." >&2
+    exit 1
+fi
+
+upsert_field() {
+    local key="$1"
+    local value="$2"
+
+    if grep -q "^${key}=" "$OS_RELEASE_FILE"; then
+        sed -i "s|^${key}=.*|${key}=\"${value}\"|" "$OS_RELEASE_FILE"
+    else
+        printf '%s="%s"\n' "$key" "$value" >> "$OS_RELEASE_FILE"
+    fi
+}
+
+upsert_field NAME "HiFam Arch OS"
+upsert_field PRETTY_NAME "HiFam Arch OS"
+upsert_field HOME_URL "https://github.com/MontyTheSoftwareEngineer/hifam-arch"
+upsert_field SUPPORT_URL "https://github.com/MontyTheSoftwareEngineer/hifam-arch/issues"
+upsert_field BUG_REPORT_URL "https://github.com/MontyTheSoftwareEngineer/hifam-arch/issues"
+EOFBRAND
+
+    chmod 0755 /usr/local/lib/hifam/refresh-os-release-branding
+
+    cat > /etc/pacman.d/hooks/hifam-os-release-branding.hook <<'EOFHOOK'
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = archlinux-release
+
+[Action]
+Description = Refreshing HiFam Arch OS branding
+When = PostTransaction
+Exec = /usr/local/lib/hifam/refresh-os-release-branding
+EOFHOOK
+
+    /usr/local/lib/hifam/refresh-os-release-branding
+}
+
+install_default_editor_config() {
+    install -d /etc/profile.d /usr/local/bin
+
+    cat > /etc/profile.d/hifam-editor.sh <<'EOFEDITOR'
+export EDITOR="nvim"
+export VISUAL="nvim"
+export SUDO_EDITOR="nvim"
+EOFEDITOR
+
+    chmod 0644 /etc/profile.d/hifam-editor.sh
+    ln -sfn /usr/bin/nvim /usr/local/bin/editor
+}
 
 echo "╔════════════════════════════════════════════════════════════╗"
 echo "║  HiFam Arch - Fix Post-Installation (From Installed OS)   ║"
@@ -25,7 +106,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # Determine user
-if [ -n "$SUDO_USER" ]; then
+if [ -n "${SUDO_USER:-}" ]; then
     USERNAME="$SUDO_USER"
 else
     USERNAME=$(logname 2>/dev/null || echo "$USER")
@@ -35,6 +116,12 @@ USER_HOME=$(eval echo "~$USERNAME")
 
 echo "Setting up for user: $USERNAME ($USER_HOME)"
 echo ""
+
+echo "Branding os-release for fastfetch..."
+install_os_release_branding
+
+echo "Setting default editor to nvim..."
+install_default_editor_config
 
 # Check if configs exist in /root
 if [ ! -d "/root/hifam-config" ]; then
@@ -89,7 +176,7 @@ fi
 
 # Create .config directories
 echo "Creating .config directories..."
-mkdir -p "$USER_HOME/.config"/{nvim,kitty,hypr,tmux}
+mkdir -p "$USER_HOME/.config"/{nvim,kitty,hypr,fastfetch,tmux}
 chown -R "$USERNAME:$USERNAME" "$USER_HOME/.config"
 
 # Run installation scripts
@@ -103,6 +190,11 @@ if [ -d "hifam-arch-scripts" ]; then
         echo "Installing packages..."
         bash "hifam-arch-scripts/2-install-packages.sh" 2>&1 | tee /var/log/hifam-packages.log || echo "Some packages failed, check log"
     fi
+
+    TEMP_YAY_SUDOERS="/etc/sudoers.d/90-hifam-yay-${USERNAME}"
+    printf '%s ALL=(ALL:ALL) NOPASSWD: /usr/bin/pacman\n' "$USERNAME" > "$TEMP_YAY_SUDOERS"
+    chmod 0440 "$TEMP_YAY_SUDOERS"
+    visudo -cf "$TEMP_YAY_SUDOERS"
     
     # Run other scripts as the user
     for script in hifam-arch-scripts/*.sh; do
@@ -129,6 +221,7 @@ done
 [ -d "$CONFIG_DEST/nvim" ] && ln -sf "$CONFIG_DEST/nvim" "$USER_HOME/.config/nvim"
 [ -d "$CONFIG_DEST/kitty" ] && ln -sf "$CONFIG_DEST/kitty" "$USER_HOME/.config/kitty"
 [ -d "$CONFIG_DEST/hypr" ] && ln -sf "$CONFIG_DEST/hypr" "$USER_HOME/.config/hypr"
+[ -d "$CONFIG_DEST/fastfetch" ] && ln -sf "$CONFIG_DEST/fastfetch" "$USER_HOME/.config/fastfetch"
 
 # Copy other configs
 [ -f "$CONFIG_DEST/tmux.conf" ] && cp "$CONFIG_DEST/tmux.conf" "$USER_HOME/.config/tmux/"

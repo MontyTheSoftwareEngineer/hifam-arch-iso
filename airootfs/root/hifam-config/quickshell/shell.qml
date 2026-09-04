@@ -17,6 +17,8 @@ ShellRoot {
         imagePath: shell.wallpaperPath
     }
 
+    AppLauncher {}
+
     IdleService {
         screenOffMinutes: shell.idleScreenOffMinutes
         lockMinutes: shell.idleLockMinutes

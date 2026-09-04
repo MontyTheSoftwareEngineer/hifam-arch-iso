@@ -55,6 +55,7 @@
     "ntp": true,
     "packages": [
         "curl",
+        "electron",
         "alsa-utils",
         "amd-ucode",
         "base",

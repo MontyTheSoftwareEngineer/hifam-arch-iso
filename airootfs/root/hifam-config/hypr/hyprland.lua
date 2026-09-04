@@ -321,3 +321,11 @@ hl.window_rule({
     },
     float = true,
 })
+
+hl.window_rule({
+    name  = "match_class___nimble_electron_app",
+    match = {
+        class = "^(nimble-electron-app)$",
+    },
+    float = true,
+})

@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+KONA_QT_REPO="git@github.com:CryoBio-AI/kona-qt.git"
+REPO="MontyTheSoftwareEngineer/Qt-6.7.0-Linux"
+TAG="v1"
+ASSET="Qt.tar.gz"
+TMP_FILE="/tmp/$ASSET"
+DEST="$HOME"
+REPOS_DIR="$HOME/MVE/repos"
+KONA_QT_DIR="$REPOS_DIR/kona-qt"
+
+NATIVE_BUILD="$HOME/MVE/builds/kona-gui-build-native"
+TARGET_BUILD="$HOME/MVE/builds/kona-gui-build-target"
+SSH_DIR="$HOME/.ssh"
+SSH_PRIVATE_KEY="$SSH_DIR/id_ed25519"
+SSH_PUBLIC_KEY="$SSH_PRIVATE_KEY.pub"
+
+ensure_ssh_key() {
+    local ssh_public_keys
+
+    mkdir -p "$SSH_DIR"
+    chmod 700 "$SSH_DIR"
+
+    shopt -s nullglob
+    ssh_public_keys=("$SSH_DIR"/*.pub)
+    shopt -u nullglob
+
+    if ((${#ssh_public_keys[@]} == 0)); then
+        echo "No SSH key found. Generating a new ed25519 key..."
+        ssh-keygen -t ed25519 -C "${USER}@$(hostname)" -f "$SSH_PRIVATE_KEY" -N ""
+    elif [[ ! -f "$SSH_PUBLIC_KEY" ]]; then
+        SSH_PUBLIC_KEY="${ssh_public_keys[0]}"
+    fi
+}
+
+confirm_github_ssh_key_setup() {
+    echo "Add this SSH public key to your GitHub account:"
+    echo
+    cat "$SSH_PUBLIC_KEY"
+    echo
+    echo "GitHub SSH keys: https://github.com/settings/keys"
+
+    while true; do
+        read -rp "Confirm once this key is added to your GitHub profile [y/N]: " confirm
+
+        case "$confirm" in
+            [Yy]|[Yy][Ee][Ss])
+                break
+                ;;
+            [Nn]|[Nn][Oo]|"")
+                echo "Waiting for GitHub SSH key setup confirmation."
+                ;;
+            *)
+                echo "Please answer yes or no."
+                ;;
+        esac
+    done
+}
+
+clone_kona_qt_repo() {
+    mkdir -p "$REPOS_DIR"
+
+    if [[ -d "$KONA_QT_DIR/.git" ]]; then
+        echo "kona-qt already cloned at $KONA_QT_DIR."
+        return
+    fi
+
+    if [[ -e "$KONA_QT_DIR" ]]; then
+        echo "Cannot clone kona-qt because $KONA_QT_DIR already exists and is not a git repository."
+        exit 1
+    fi
+
+    echo "Cloning kona-qt into $KONA_QT_DIR..."
+    git clone "$KONA_QT_REPO" "$KONA_QT_DIR"
+}
+
+read -rp "Install MVE dev env? [Y/n] " answer
+
+if [[ "$answer" =~ ^[Nn]$ ]]; then
+    echo "Skipping."
+    exit 0
+fi
+
+ensure_ssh_key
+confirm_github_ssh_key_setup
+
+# Check GitHub authentication before downloading Qt assets
+if ! gh auth status &>/dev/null; then
+    echo "GitHub authentication required."
+    gh auth login
+fi
+
+clone_kona_qt_repo
+
+echo "Downloading Qt-6.7.0..."
+
+gh release download "$TAG" \
+    --repo "$REPO" \
+    --pattern "$ASSET" \
+    --output "$TMP_FILE"
+
+echo "Extracting Qt to $HOME..."
+
+tar -xzf "$TMP_FILE" -C "$DEST"
+rm -f "$TMP_FILE"
+
+echo "Qt-6.7.0 installed to $HOME."
+
+echo "Setting up MVE GUI build directories..."
+
+mkdir -p "$NATIVE_BUILD" "$TARGET_BUILD"
+
+echo "Created:"
+echo "  $NATIVE_BUILD"
+echo "  $TARGET_BUILD"
+
+echo "Installing ARM none-eabi toolchain..."
+
+sudo pacman -S --needed --noconfirm \
+    arm-none-eabi-gcc \
+    arm-none-eabi-binutils \
+    arm-none-eabi-newlib
+
+echo "MVE dev environment installed."
