@@ -4,7 +4,8 @@ import QtQuick
 import Quickshell
 
 Singleton {
-    property color primaryColor: "#7a7a7a"
+    // property color primaryColor: "#7a7a7a"
+    property color primaryColor: "#000000"
     property color secondaryColor: "#65e1e6"
     property color backgroundColor: "#1E1E1E"
     property color textColor: "#FFFFFF"

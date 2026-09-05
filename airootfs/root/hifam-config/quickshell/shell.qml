@@ -23,99 +23,43 @@ ShellRoot {
 
     // Shared so the bar pill and the OSD popup always agree on state.
     VolumeModel {
-        id: volumeModel
+        id: sharedVolumeModel
     }
 
     VolumeOSD {
-        model: volumeModel
+        model: sharedVolumeModel
     }
 
     IdleService {
         screenOffMinutes: shell.idleScreenOffMinutes
         lockMinutes: shell.idleLockMinutes
     }
-
     Variants {
         model: Quickshell.screens
         PanelWindow {
             id: bar
             required property var modelData
             anchors { top: true; left: true; right: true }
-            implicitHeight: 38
+            implicitHeight: Theme.barHeight * 1.2
+            exclusionMode: ExclusionMode.Ignore
+            aboveWindows: true
             color: Qt.rgba(0,0,0,0)
+
+            Island {
+                id: island
+                volumeModel: sharedVolumeModel
+            }
 
             LockScreen {
                 wallpaperPath: shell.wallpaperPath
             }
 
-            Workspaces {
-                id: ws
-                anchors.left: parent.left
-                anchors.leftMargin: Theme.spacing
-                anchors.top: parent.top
-            }
-            Pill {
-                id: screenRecordingIndicator
-                anchors.centerIn: parent
-                icon: "hangout_video"
-                iconColor: "#ff0000"
-                text: "Recording"
-                visible: screenRecordingIndicatorPoll.text !== ""
-            }
-            SystemClock {
-                id: clock
-                precision: SystemClock.Precision.Minutes
-            }
-
-            Poll {
-                id: bluetooth
-                cmd: "bluetoothctl show | grep -q 'Powered: yes' && { [ -n \"$(bluetoothctl devices Connected)\" ] && echo connected || echo on; } || echo off"
-            }
-
-            Poll {
-                debug: true
-                id: screenRecordingIndicatorPoll
-                cmd: "pgrep -f \"^gpu-screen-recorder\""
-                interval: 3000
-            }
-
-            Row {
-                anchors.right: parent.right
-                anchors.rightMargin: Theme.spacing
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: Theme.spacing
-
-                Volume { id: volumeWidget; model: volumeModel }
-
-                Battery { id: batteryWidget }
-
-                Pill {
-                    icon: bluetooth.text === "connected" ? "bluetooth_connected"
-                        : (bluetooth.text === "on" ? "bluetooth" : "bluetooth_disabled")
-                    iconColor: Theme.iconColor
-                    text: bluetooth.text === "connected" ? "On and Connected"
-                        : (bluetooth.text === "on" ? "On" : "Off")
-                    onClicked: {
-                        Quickshell.execDetached(["kitty", "-e", "sh", "-c", "bluetui"])
-                    }
-                }
-
-                Network {
-                    id: network
-                }
-                Pill {
-                    id: clockPill
-                    icon: "nest_clock_farsight_analog"
-                    iconColor: Theme.iconColor
-                    text: Qt.formatDateTime(clock.date, "hh:mm A")
-                    onClicked: calendarPopup.toggle()
-                }
-
-                CalendarPopup {
-                    id: calendarPopup
-                    target: clockPill
-                }
-            }
+            //Workspaces {
+            //    id: ws
+            //    anchors.left: parent.left
+            //    anchors.leftMargin: Theme.spacing
+            //    anchors.top: parent.top
+            //}
         }
     }
 }

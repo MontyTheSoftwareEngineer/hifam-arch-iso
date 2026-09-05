@@ -17,7 +17,7 @@ PopupWindow {
     anchor.margins.top: Root.Theme.spacing
 
     color: "transparent"
-    visible: true
+    visible: false
     grabFocus: true
 
     implicitWidth: 260

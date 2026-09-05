@@ -4,7 +4,7 @@ import "../" as Root
 
 // Popup anchored to the Network pill. Shows the Wi-Fi toggle + network list
 // by default; switches to a password entry page when the user picks a
-// secured network that isn't already saved.
+// secured network.
 PopupWindow {
     id: root
 
@@ -56,10 +56,13 @@ PopupWindow {
     function selectNetwork(network) {
         if (network.active) return
         if (model.connectingSsid !== "") return
-        if (network.security !== "" && !network.known) {
+        // Always ask for the password for secured networks. This avoids
+        // silently reusing a stale or incorrect saved NetworkManager profile.
+        if (network.security !== "") {
             pendingSsid = network.ssid
             passwordText = ""
             errorText = ""
+            visible = true
         } else {
             model.connectTo(network.ssid, "")
         }
@@ -162,45 +165,49 @@ PopupWindow {
                     interactive: contentHeight > height
                     boundsBehavior: Flickable.StopAtBounds
                     model: root.model ? root.model.networks : []
-                    delegate: Row {
+                    delegate: Item {
                         required property var modelData
                         width: networkListView.width
                         height: root.rowHeight
-                        leftPadding: Root.Theme.spacing
-                        rightPadding: Root.Theme.spacing
-                        spacing: Root.Theme.spacing
 
                         readonly property bool connecting: root.model && root.model.connectingSsid === modelData.ssid
 
-                        Text {
-                            height: parent.height
-                            verticalAlignment: Text.AlignVCenter
-                            width: 12
-                            text: modelData.active ? "●" : ""
-                            color: Root.Theme.secondaryColor
-                            font.pixelSize: Root.Theme.fontSize
-                        }
-                        Text {
-                            height: parent.height
-                            verticalAlignment: Text.AlignVCenter
-                            width: networkListView.width - 90
-                            text: modelData.ssid
-                            elide: Text.ElideRight
-                            color: Root.Theme.textColor
-                            font.family: Root.Theme.font
-                            font.pixelSize: Root.Theme.fontSize
-                        }
-                        Text {
-                            height: parent.height
-                            verticalAlignment: Text.AlignVCenter
-                            text: connecting ? "Connecting…" : modelData.signal + "%"
-                            color: connecting ? Root.Theme.secondaryColor : Root.Theme.textColor
-                            font.family: Root.Theme.font
-                            font.pixelSize: Root.Theme.fontSize
+                        Row {
+                            anchors.fill: parent
+                            leftPadding: Root.Theme.spacing
+                            rightPadding: Root.Theme.spacing
+                            spacing: Root.Theme.spacing
+
+                            Text {
+                                height: parent.height
+                                verticalAlignment: Text.AlignVCenter
+                                width: 12
+                                text: modelData.active ? "●" : ""
+                                color: Root.Theme.secondaryColor
+                                font.pixelSize: Root.Theme.fontSize
+                            }
+                            Text {
+                                height: parent.height
+                                verticalAlignment: Text.AlignVCenter
+                                width: networkListView.width - 90
+                                text: modelData.ssid
+                                elide: Text.ElideRight
+                                color: Root.Theme.textColor
+                                font.family: Root.Theme.font
+                                font.pixelSize: Root.Theme.fontSize
+                            }
+                            Text {
+                                height: parent.height
+                                verticalAlignment: Text.AlignVCenter
+                                text: connecting ? "Connecting…" : modelData.signal + "%"
+                                color: connecting ? Root.Theme.secondaryColor : Root.Theme.textColor
+                                font.family: Root.Theme.font
+                                font.pixelSize: Root.Theme.fontSize
+                            }
                         }
                         MouseArea {
-                            width: parent.width
-                            height: parent.height
+                            anchors.fill: parent
+                            z: 1
                             enabled: !connecting
                             onClicked: root.selectNetwork(modelData)
                         }

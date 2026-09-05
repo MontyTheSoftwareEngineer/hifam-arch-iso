@@ -206,8 +206,6 @@ BarWidget {
     }
 
     function focusWorkspace(id) {
-        if (!root.bar)
-            return;
         id = Math.floor(Number(id));
         if (!isFinite(id) || id < 1)
             return;
@@ -217,8 +215,6 @@ BarWidget {
     }
 
     function switchWorkspace(delta) {
-        if (!root.bar)
-            return;
         delta = Math.floor(Number(delta));
         if (!isFinite(delta) || delta === 0)
             return;

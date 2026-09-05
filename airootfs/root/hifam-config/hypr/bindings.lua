@@ -23,6 +23,8 @@ hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(menu))
 
 hl.bind("SUPER + SHIFT" .. " + " .. "L", hl.dsp.exec_cmd("qs ipc call lockscreen lock"))
 hl.bind("SUPER" .. " + " .. "D", hl.dsp.exec_cmd("qs ipc call launcher toggle"))
+hl.bind("SUPER + SHIFT" .. " + " .. "T", hl.dsp.exec_cmd("qs ipc call island toggleOpen"))
+hl.bind("SUPER" .. " + " .. "T", hl.dsp.exec_cmd("qs ipc call island toggle"))
 
 -- hl.bind("SUPER" .. " + " .. "RETURN", hl.dsp.exec_cmd("kitty -e tmux new"))
 -- hl.bind("SUPER + SHIFT" .. " + " .. "RETURN", hl.dsp.exec_cmd("kitty -e sh -c \"tmux attach || tmux new\""))

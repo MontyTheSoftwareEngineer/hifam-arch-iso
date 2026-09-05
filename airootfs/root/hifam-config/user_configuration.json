@@ -90,6 +90,8 @@
         "quickshell",
         "ripgrep",
         "slurp",
+        "tree-sitter-cli",
+        "unzip",
         "wl-clipboard",
         "yq",
         "zsh",
